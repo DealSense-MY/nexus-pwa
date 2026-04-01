@@ -19,7 +19,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          python3 << EOF
+          cat <<EOF > script.py
           import urllib.request
           import urllib.error
           import json
@@ -61,7 +61,7 @@ Tulis dalam Bahasa Melayu santai dengan emoji menarik."""
           payload = {
               "model": "claude-haiku-4-5-20251001",
               "max_tokens": 2000,
-              "system": "Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook menarik untuk group Perak Kamuniti. Ikut format yang diberikan dengan tepat. Sertakan link sumber berita dan link apply kerja yang betul.",
+              "system": "Anda adalah NEXUS Perak Kamuniti Agent.",
               "messages": [{"role": "user", "content": prompt}]
           }
 
@@ -76,41 +76,15 @@ Tulis dalam Bahasa Melayu santai dengan emoji menarik."""
               method="POST"
           )
 
-          try:
-              with urllib.request.urlopen(req) as resp:
-                  data = json.loads(resp.read())
-                  reply = " ".join(i["text"] for i in data.get("content", []) if i.get("type") == "text")
+          with urllib.request.urlopen(req) as resp:
+              data = json.loads(resp.read())
+              reply = " ".join(i["text"] for i in data.get("content", []) if i.get("type") == "text")
 
-              try:
-                  with open("queue.json", "r", encoding="utf-8") as f:
-                      queue = json.load(f)
-              except:
-                  queue = []
+          with open("queue.json", "w", encoding="utf-8") as f:
+              json.dump([{"content": reply}], f)
 
-              new_post = {
-                  "id": int(datetime.now().timestamp() * 1000),
-                  "content": reply,
-                  "type": "daily",
-                  "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                  "done": False
-              }
-              queue.insert(0, new_post)
-              queue = queue[:30]
-
-              with open("queue.json", "w", encoding="utf-8") as f:
-                  json.dump(queue, f, ensure_ascii=False, indent=2)
-
-              print(f"Post berjaya dijana: {len(reply)} chars")
-              print(reply[:300])
-
-          except urllib.error.HTTPError as e:
-              body = e.read().decode()
-              print(f"HTTP Error {e.code}: {body}")
-              exit(1)
-          except Exception as e:
-              print(f"Error: {e}")
-              exit(1)
           EOF
+          python3 script.py
 
       - name: Commit queue.json
         run: |
