@@ -1171,7 +1171,8 @@ function autoResize(el) {
 
 // ─── Settings ─────────────────────────────────────────
 function openSettings() {
-  document.getElementById('settingsKey').value = '';
+  document.getElementById('settingsKeyOld').value = '';
+  document.getElementById('settingsKeyNew').value = '';
   document.getElementById('settingsOverlay').classList.remove('hidden');
 }
 
