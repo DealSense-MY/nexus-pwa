@@ -971,12 +971,28 @@ const SYSTEM_PROMPTS = {
   email: `Anda adalah NEXUS Email Assistant — pakar emel profesional Bahasa Melayu dan Inggeris. Sentiasa sediakan subjek dan badan emel yang jelas.`,
   news: `Anda adalah NEXUS News Analyst. Cari dan analisis berita terkini ekonomi, kewangan, teknologi, Malaysia. Berikan konteks dan implikasi. Berbahasa Melayu.`,
   agama: `Anda pakar agama Islam berdasarkan Al-Quran dan Hadith. Berikan pandangan yang adil dan ilmiah. Sentiasa mengingatkan untuk rujuk ustaz/ulama untuk isu besar.`,
-  perak: `Anda adalah NEXUS Perak Kamuniti Agent — pakar kandungan untuk group Facebook "Perak Kamuniti". Tugas anda:
-1. Cari berita terkini di Perak, Malaysia (jenayah, pembangunan, acara, politik tempatan)
-2. Cari jawatan kosong / peluang pekerjaan di Perak
-3. Cari kisah viral atau trending yang berlaku di Perak
-4. Format semua kandungan sebagai post Facebook yang menarik dengan emoji, hashtag relevan (#PerakKamuniti #Perak #Malaysia), dan caption yang engaging untuk audiens Malaysia.
-Sentiasa gunakan web search untuk maklumat terkini. Tulis dalam Bahasa Melayu yang santai dan mudah difahami.`
+  perak: `Anda adalah NEXUS Perak Kamuniti Agent — pakar kandungan untuk group Facebook "Perak Kamuniti". 
+
+Format post WAJIB ikut susunan ini:
+
+1️⃣ BAHAGIAN 1 — BERITA PERAK TERKINI
+- Cari 1 berita paling penting hari ini dari Perak Malaysia
+- Nyatakan sumber berita dan sertakan link artikel asal
+- Hashtag berkaitan berita tersebut
+
+2️⃣ BAHAGIAN 2 — KISAH VIRAL PERAK  
+- Cari 1 kisah viral/menarik/lucu yang berlaku di Perak
+- Sertakan link sumber jika ada
+- Hashtag berkaitan kisah tersebut
+
+3️⃣ BAHAGIAN 3 — JAWATAN KOSONG DI PERAK
+- Cari 2-3 jawatan kosong terkini di Perak
+- Setiap jawatan WAJIB ada: nama syarikat, jawatan, lokasi, dan link apply (JobStreet/Maukerja/Indeed)
+- Hashtag berkaitan kerja
+
+Hashtag keseluruhan di hujung post mesti berkaitan dengan semua info di atas + #PerakKamuniti #Perak #Malaysia #InfoPerak
+
+Tulis dalam Bahasa Melayu santai, emoji menarik, format jelas dan mudah dibaca. Sentiasa guna web search untuk maklumat terkini.`
 };
 
 const CHIPS = {
@@ -1310,11 +1326,38 @@ async function generateTodayPost(auto = false) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Jana post...'; }
 
   const today = new Date().toLocaleDateString('ms-MY', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-  const prompt = `Hari ini adalah ${today}. Jana satu post Facebook yang lengkap untuk group Perak Kamuniti. Post mesti mengandungi:
-1. 📰 Satu berita terkini dari Perak Malaysia (cari berita semasa)
-2. 💼 Satu atau dua jawatan kosong di Perak (kerja terkini)
-3. 🔥 Satu kisah viral atau menarik dari Perak
-Format sebagai satu post FB panjang dengan emoji menarik, hashtag (#PerakKamuniti #Perak #Malaysia #PerakNews) dan bahasa Melayu santai. Pisahkan setiap bahagian dengan jelas.`;
+  const prompt = `Hari ini ${today}. Jana satu post Facebook lengkap untuk group Perak Kamuniti Malaysia.
+
+WAJIB ikut susunan dan format ini:
+
+━━━━━━━━━━━━━━━━━━━━━━
+📰 BERITA PERAK HARI INI
+━━━━━━━━━━━━━━━━━━━━━━
+[Cari dan tulis 1 berita paling penting hari ini dari Perak]
+🔗 Sumber: [link artikel asal]
+#[hashtag berkaitan berita]
+
+━━━━━━━━━━━━━━━━━━━━━━
+🔥 KISAH VIRAL PERAK
+━━━━━━━━━━━━━━━━━━━━━━
+[Cari dan tulis 1 kisah viral/menarik dari Perak]
+🔗 Sumber: [link jika ada]
+#[hashtag berkaitan kisah]
+
+━━━━━━━━━━━━━━━━━━━━━━
+💼 JAWATAN KOSONG PERAK
+━━━━━━━━━━━━━━━━━━━━━━
+[Cari 2-3 jawatan kosong terkini di Perak — WAJIB ada nama syarikat, jawatan, lokasi DAN link apply]
+Contoh format:
+🏢 Syarikat: [nama]
+👔 Jawatan: [nama jawatan]
+📍 Lokasi: [daerah di Perak]
+🔗 Apply: [link JobStreet/Maukerja/Indeed]
+
+━━━━━━━━━━━━━━━━━━━━━━
+[Hashtag keseluruhan berkaitan semua info di atas + #PerakKamuniti #Perak #Malaysia #InfoPerak #KerjaPerak #BeritaPerak]
+
+Tulis dalam Bahasa Melayu santai dan emoji menarik.`;
 
   try {
     const res = await fetch('/.netlify/functions/claude', {
