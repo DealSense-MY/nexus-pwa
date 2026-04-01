@@ -1,9 +1,8 @@
-const CACHE_NAME = 'nexus-v1';
+const CACHE_NAME = 'nexus-v3';
 const ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/queue.json'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', e => {
@@ -23,13 +22,7 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('queue.json')) {
-    e.respondWith(
-      fetch(e.request).catch(() => caches.match(e.request))
-    );
-    return;
-  }
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
