@@ -35,19 +35,17 @@ jobs:
           prompt = f"""Hari ini {today}. Jana satu post Facebook lengkap untuk group Perak Kamuniti Malaysia.
 
           Post mesti ada 3 bahagian:
-          1. 📰 BERITA PERAK TERKINI - satu berita paling penting hari ini dari Perak
-          2. 💼 KERJA KOSONG PERAK - 2-3 jawatan kosong terkini di Perak
-          3. 🔥 KISAH VIRAL - satu kisah menarik/viral dari Perak
+          1. BERITA PERAK TERKINI - satu berita paling penting hari ini dari Perak Malaysia
+          2. KERJA KOSONG PERAK - 2-3 jawatan kosong terkini di Perak
+          3. KISAH MENARIK - satu kisah menarik atau viral dari Perak
 
-          Format: Post FB panjang, bahasa Melayu santai, emoji menarik, hashtag #PerakKamuniti #Perak #Malaysia #PerakNews di hujung.
-          Cari maklumat terkini menggunakan web search."""
+          Format: Post FB panjang, bahasa Melayu santai, emoji menarik, hashtag #PerakKamuniti #Perak #Malaysia di hujung."""
 
           payload = {
-              "model": "claude-sonnet-4-20250514",
+              "model": "claude-haiku-4-5-20251001",
               "max_tokens": 1500,
-              "system": "Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook menarik untuk group Perak Kamuniti. Gunakan web search untuk maklumat terkini.",
-              "messages": [{"role": "user", "content": prompt}],
-              "tools": [{"type": "web_search_20250305", "name": "web_search"}]
+              "system": "Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook menarik untuk group Perak Kamuniti. Berikan maklumat yang berguna dan menarik tentang Perak Malaysia.",
+              "messages": [{"role": "user", "content": prompt}]
           }
 
           req = urllib.request.Request(
@@ -89,10 +87,15 @@ jobs:
               with open("queue.json", "w", encoding="utf-8") as f:
                   json.dump(queue, f, ensure_ascii=False, indent=2)
 
-              print(f"✅ Post berjaya dijana: {len(reply)} chars")
+              print(f"Post berjaya dijana: {len(reply)} chars")
+              print(reply[:200])
 
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"HTTP Error {e.code}: {body}")
+              exit(1)
           except Exception as e:
-              print(f"❌ Error: {e}")
+              print(f"Error: {e}")
               exit(1)
           EOF
 
@@ -101,5 +104,5 @@ jobs:
           git config user.name "NEXUS Bot"
           git config user.email "nexus@dealsense.my"
           git add queue.json
-          git diff --staged --quiet || git commit -m "📅 Auto post Perak $(date +'%d/%m/%Y')"
+          git diff --staged --quiet || git commit -m "Auto post Perak $(date +'%d/%m/%Y')"
           git push
