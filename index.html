@@ -1085,15 +1085,12 @@ async function send() {
 
     if (needSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/claude', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ ...body, apiKey })
     });
 
     const data = await res.json();
@@ -1273,20 +1270,15 @@ async function generateTodayPost(auto = false) {
 Format sebagai satu post FB panjang dengan emoji menarik, hashtag (#PerakKamuniti #Perak #Malaysia #PerakNews) dan bahasa Melayu santai. Pisahkan setiap bahagian dengan jelas.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/.netlify/functions/claude', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'x-api-key': apiKey, 
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        apiKey,
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
-        system: `Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook yang menarik dan informatif untuk group Perak Kamuniti. Sentiasa cari maklumat terkini menggunakan web search.`,
-        messages: [{ role:'user', content: prompt }],
-        tools: [{ type:'web_search_20250305', name:'web_search' }]
+        system: `Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook yang menarik dan informatif untuk group Perak Kamuniti.`,
+        messages: [{ role:'user', content: prompt }]
       })
     });
     const data = await res.json();
