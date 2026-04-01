@@ -740,6 +740,20 @@
   .sched-fab:active { transform:scale(0.92); }
   .sched-notif { position:absolute; top:-4px; right:-4px; width:16px; height:16px; background:#ef4444; border-radius:50%; font-size:0.55rem; font-weight:700; color:white; display:flex; align-items:center; justify-content:center; }
 
+  .upload-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .upload-btn:active { transform: scale(0.92); border-color: var(--accent); }
+
   .toast {
     position: fixed;
     bottom: calc(var(--safe-bottom) + 80px);
@@ -765,19 +779,16 @@
 </head>
 <body>
 
-<!-- SETUP SCREEN -->
+<!-- PASSWORD SCREEN -->
 <div class="screen" id="setupScreen">
   <div class="setup-logo">NEXUS</div>
   <div class="setup-sub">Personal AI Assistant</div>
-
   <div class="setup-card">
-    <div class="setup-label">🔑 Masukkan Claude API Key</div>
-    <input type="password" class="setup-input" id="setupKey" placeholder="sk-ant-api03-..." />
-    <div class="setup-note">
-      Dapatkan API key percuma di<br>
-      <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key
-    </div>
+    <div class="setup-label">🔐 Masukkan Password</div>
+    <input type="password" class="setup-input" id="setupKey" placeholder="Password anda..." onkeydown="if(event.key==='Enter')completeSetup()"/>
+    <div class="setup-note">Nexus dilindungi password. Hanya anda sahaja boleh akses.</div>
     <button class="setup-btn" onclick="completeSetup()">MULA NEXUS →</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.72rem;text-align:center;margin-top:10px;display:none;">❌ Password salah. Cuba semula.</div>
   </div>
 </div>
 
@@ -838,10 +849,22 @@
 
   <!-- Input bar -->
   <div class="input-bar">
+    <!-- Image preview -->
+    <div id="imgPreviewBar" style="display:none;padding:6px 0;margin-bottom:6px;">
+      <div style="position:relative;display:inline-block;">
+        <img id="imgPreview" style="height:60px;border-radius:8px;border:1px solid var(--border);object-fit:cover;" />
+        <button onclick="clearImage()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#ef4444;border:none;color:white;font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+    </div>
     <div class="input-row">
+      <input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none" onchange="handleFile(event)">
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()" title="Upload imej/PDF">📎</button>
+      <button class="upload-btn" onclick="openCamera()" title="Ambil gambar">📷</button>
       <textarea id="msgInput" placeholder="Taip mesej..." rows="1"
         oninput="autoResize(this)"
-        onkeydown="handleKey(event)"></textarea>
+        onkeydown="handleKey(event)"
+        ondragover="event.preventDefault()"
+        ondrop="handleDrop(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
     </div>
   </div>
@@ -851,13 +874,15 @@
 <div id="settingsOverlay" class="hidden" onclick="closeSettingsOutside(event)">
   <div class="settings-sheet">
     <div class="sheet-title">⚙️ TETAPAN</div>
-    <div class="sheet-label">API Key</div>
-    <input type="password" class="sheet-input" id="settingsKey" placeholder="sk-ant-api03-..." />
+    <div class="sheet-label">🔐 Tukar Password</div>
+    <input type="password" class="sheet-input" id="settingsKeyOld" placeholder="Password lama..." />
+    <input type="password" class="sheet-input" id="settingsKeyNew" placeholder="Password baru..." />
     <div class="sheet-row">
       <button class="sheet-btn btn-cancel" onclick="closeSettings()">Batal</button>
       <button class="sheet-btn btn-save" onclick="saveSettings()">Simpan</button>
     </div>
     <button class="btn-clear" onclick="clearChat()">🗑️ Kosongkan Chat</button>
+    <button class="btn-clear" onclick="logout()" style="background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.3);color:#a78bfa;margin-top:6px;">🚪 Log Keluar</button>
   </div>
 </div>
 
@@ -966,7 +991,8 @@ const CHIPS = {
 
 // ─── Init ─────────────────────────────────────────────
 window.addEventListener('load', () => {
-  showApp();
+  const auth = localStorage.getItem('nexus_auth');
+  if (auth === '1') showApp();
   loadPrices();
   setInterval(loadPrices, 60000);
   loadQueue().then(() => updateQueueBadge());
@@ -976,17 +1002,29 @@ window.addEventListener('load', () => {
   }
 });
 
-// ─── Setup ────────────────────────────────────────────
+// ─── Password ─────────────────────────────────────────
+const DEFAULT_PW = 'nexus2024';
+
 function completeSetup() {
-  const key = document.getElementById('setupKey').value.trim();
-  if (!key || !key.startsWith('sk-ant')) {
-    showToast('❌ API key tidak sah. Semak semula.');
-    return;
+  const entered = document.getElementById('setupKey').value;
+  const stored = localStorage.getItem('nexus_pw') || DEFAULT_PW;
+  if (entered === stored) {
+    localStorage.setItem('nexus_auth', '1');
+    showApp();
+    showToast('✅ Selamat datang ke NEXUS!');
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('setupKey').value = '';
   }
-  apiKey = key;
-  localStorage.setItem('nexus_key', key);
-  showApp();
-  showToast('✅ NEXUS diaktifkan!');
+}
+
+function logout() {
+  localStorage.removeItem('nexus_auth');
+  closeSettings();
+  document.getElementById('setupScreen').classList.remove('hidden');
+  document.getElementById('appScreen').classList.add('hidden');
+  document.getElementById('setupKey').value = '';
+  document.getElementById('pwError').style.display = 'none';
 }
 
 function showApp() {
@@ -1060,7 +1098,21 @@ async function send() {
 
   addMsg('user', text);
   inp.value = ''; inp.style.height = 'auto';
-  history.push({ role: 'user', content: text });
+  // Build message content with optional image
+  let userContent;
+  if (currentImage) {
+    userContent = [];
+    if (currentImage.isImage) {
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: currentImage.type, data: currentImage.base64 } });
+    } else {
+      userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: currentImage.base64 } });
+    }
+    userContent.push({ type: 'text', text });
+    clearImage();
+  } else {
+    userContent = text;
+  }
+  history.push({ role: 'user', content: userContent });
 
   const btn = document.getElementById('sendBtn');
   btn.disabled = true;
@@ -1132,12 +1184,14 @@ function closeSettingsOutside(e) {
 }
 
 function saveSettings() {
-  const key = document.getElementById('settingsKey').value.trim();
-  if (key) {
-    apiKey = key;
-    localStorage.setItem('nexus_key', key);
-    showToast('✅ API key dikemas kini!');
-  }
+  const oldPw = document.getElementById('settingsKeyOld').value;
+  const newPw = document.getElementById('settingsKeyNew').value;
+  const stored = localStorage.getItem('nexus_pw') || DEFAULT_PW;
+  if (!oldPw || !newPw) { showToast('⚠️ Isi semua field password'); return; }
+  if (oldPw !== stored) { showToast('❌ Password lama salah!'); return; }
+  if (newPw.length < 4) { showToast('⚠️ Password terlalu pendek!'); return; }
+  localStorage.setItem('nexus_pw', newPw);
+  showToast('✅ Password berjaya ditukar!');
   closeSettings();
 }
 
@@ -1460,6 +1514,68 @@ function checkAndShowPerakPanel(reply, userText) {
   else if (lower.includes('kerja') || lower.includes('job') || lower.includes('vacancy')) type = 'job';
   else if (lower.includes('viral') || lower.includes('kisah')) type = 'viral';
   showPerakApproval(reply, type);
+}
+
+// ─── Image Upload ─────────────────────────────────────
+let currentImage = null;
+
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processFile(file);
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  processFile(file);
+}
+
+function processFile(file) {
+  const isImage = file.type.startsWith('image/');
+  const isPDF = file.type === 'application/pdf';
+  if (!isImage && !isPDF) { showToast('⚠️ Hanya imej atau PDF sahaja!'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64 = e.target.result.split(',')[1];
+    currentImage = { base64, type: file.type, name: file.name, isImage };
+
+    if (isImage) {
+      document.getElementById('imgPreview').src = e.target.result;
+      document.getElementById('imgPreviewBar').style.display = 'block';
+    } else {
+      document.getElementById('imgPreviewBar').style.display = 'block';
+      document.getElementById('imgPreview').src = '';
+      document.getElementById('imgPreview').style.display = 'none';
+      document.getElementById('imgPreviewBar').innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+          <span>📄</span>
+          <span style="font-size:0.72rem;color:var(--text)">${file.name}</span>
+          <button onclick="clearImage()" style="margin-left:auto;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;">✕</button>
+        </div>`;
+    }
+    showToast(`✅ ${isImage ? 'Imej' : 'PDF'} sedia untuk dihantar!`);
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  currentImage = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('imgPreviewBar').style.display = 'none';
+  const img = document.getElementById('imgPreview');
+  if (img) { img.src = ''; img.style.display = 'block'; }
+}
+
+function openCamera() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.onchange = (e) => processFile(e.target.files[0]);
+  input.click();
 }
 
 // ─── Prices ──────────────────────────────────────────
