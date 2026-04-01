@@ -1,14 +1,9 @@
+[build]
+  functions = "netlify/functions"
+
 [[headers]]
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, x-api-key, anthropic-version, anthropic-dangerous-direct-browser-access"
-
-[[redirects]]
-  from = "/api/claude"
-  to = "https://api.anthropic.com/v1/messages"
-  status = 200
-  force = true
-  [redirects.headers]
-    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, x-api-key, anthropic-version"
