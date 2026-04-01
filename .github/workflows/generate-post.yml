@@ -1,0 +1,105 @@
+name: Generate Perak Daily Post
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Setiap hari jam 8:00 pagi Malaysia (UTC+8 = 00:00 UTC)
+  workflow_dispatch:       # Boleh trigger manual juga
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Generate post dengan Claude AI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 << 'EOF'
+          import urllib.request
+          import urllib.error
+          import json
+          import os
+          from datetime import datetime
+
+          api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+          if not api_key:
+              print("ERROR: Tiada API key!")
+              exit(1)
+
+          today = datetime.now().strftime("%d %B %Y")
+          prompt = f"""Hari ini {today}. Jana satu post Facebook lengkap untuk group Perak Kamuniti Malaysia.
+
+          Post mesti ada 3 bahagian:
+          1. 📰 BERITA PERAK TERKINI - satu berita paling penting hari ini dari Perak
+          2. 💼 KERJA KOSONG PERAK - 2-3 jawatan kosong terkini di Perak
+          3. 🔥 KISAH VIRAL - satu kisah menarik/viral dari Perak
+
+          Format: Post FB panjang, bahasa Melayu santai, emoji menarik, hashtag #PerakKamuniti #Perak #Malaysia #PerakNews di hujung.
+          Cari maklumat terkini menggunakan web search."""
+
+          payload = {
+              "model": "claude-sonnet-4-20250514",
+              "max_tokens": 1500,
+              "system": "Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook menarik untuk group Perak Kamuniti. Gunakan web search untuk maklumat terkini.",
+              "messages": [{"role": "user", "content": prompt}],
+              "tools": [{"type": "web_search_20250305", "name": "web_search"}]
+          }
+
+          req = urllib.request.Request(
+              "https://api.anthropic.com/v1/messages",
+              data=json.dumps(payload).encode(),
+              headers={
+                  "Content-Type": "application/json",
+                  "x-api-key": api_key,
+                  "anthropic-version": "2023-06-01"
+              },
+              method="POST"
+          )
+
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  data = json.loads(resp.read())
+                  reply = " ".join(i["text"] for i in data.get("content", []) if i.get("type") == "text")
+
+              # Load queue sedia ada
+              try:
+                  with open("queue.json", "r", encoding="utf-8") as f:
+                      queue = json.load(f)
+              except:
+                  queue = []
+
+              # Tambah post baru
+              new_post = {
+                  "id": int(datetime.now().timestamp() * 1000),
+                  "content": reply,
+                  "type": "daily",
+                  "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                  "done": False
+              }
+              queue.insert(0, new_post)
+
+              # Simpan max 30 post
+              queue = queue[:30]
+
+              with open("queue.json", "w", encoding="utf-8") as f:
+                  json.dump(queue, f, ensure_ascii=False, indent=2)
+
+              print(f"✅ Post berjaya dijana: {len(reply)} chars")
+
+          except Exception as e:
+              print(f"❌ Error: {e}")
+              exit(1)
+          EOF
+
+      - name: Commit queue.json
+        run: |
+          git config user.name "NEXUS Bot"
+          git config user.email "nexus@dealsense.my"
+          git add queue.json
+          git diff --staged --quiet || git commit -m "📅 Auto post Perak $(date +'%d/%m/%Y')"
+          git push
