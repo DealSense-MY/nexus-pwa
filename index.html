@@ -966,11 +966,7 @@ const CHIPS = {
 
 // ─── Init ─────────────────────────────────────────────
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('nexus_key');
-  if (saved) {
-    apiKey = saved;
-    showApp();
-  }
+  showApp();
   loadPrices();
   setInterval(loadPrices, 60000);
   loadQueue().then(() => updateQueueBadge());
@@ -1060,10 +1056,7 @@ function hideTyping() {
 async function send() {
   const inp = document.getElementById('msgInput');
   const text = inp.value.trim();
-  if (!text || !apiKey) {
-    if (!apiKey) showToast('⚠️ Tiada API key. Buka tetapan ⚙️');
-    return;
-  }
+  if (!text) return;
 
   addMsg('user', text);
   inp.value = ''; inp.style.height = 'auto';
@@ -1090,7 +1083,7 @@ async function send() {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ...body, apiKey })
+      body: JSON.stringify(body)
     });
 
     const data = await res.json();
@@ -1245,7 +1238,7 @@ function stopSchedChecker() {
 
 function checkSchedule() {
   const active = localStorage.getItem('sched_active') === 'true';
-  if (!active || !apiKey) return;
+  if (!active) return;
   const schedTime = localStorage.getItem('sched_time') || '08:00';
   const now = new Date();
   const [h, m] = schedTime.split(':').map(Number);
@@ -1258,7 +1251,6 @@ function checkSchedule() {
 }
 
 async function generateTodayPost(auto = false) {
-  if (!apiKey) { showToast('⚠️ Tiada API key. Buka tetapan ⚙️'); return; }
   const btn = document.getElementById('genNowBtn');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Jana post...'; }
 
@@ -1274,7 +1266,6 @@ Format sebagai satu post FB panjang dengan emoji menarik, hashtag (#PerakKamunit
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apiKey,
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
         system: `Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook yang menarik dan informatif untuk group Perak Kamuniti.`,
