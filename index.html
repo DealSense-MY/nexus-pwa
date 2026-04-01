@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00e5ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NEXUS">
+<title>NEXUS AI</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #131920;
+    --border: #1e2d3d;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --muted: #4a5568;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCREENS */
+  .screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+  }
+
+  .screen.hidden {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ===== SETUP SCREEN ===== */
+  #setupScreen {
+    background: var(--bg);
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    padding-top: calc(var(--safe-top) + 32px);
+  }
+
+  .setup-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: 0 0 40px rgba(0,229,255,0.5);
+    letter-spacing: 0.15em;
+    margin-bottom: 8px;
+    animation: glow 3s ease-in-out infinite;
+  }
+
+  @keyframes glow {
+    0%, 100% { text-shadow: 0 0 30px rgba(0,229,255,0.4); }
+    50% { text-shadow: 0 0 60px rgba(0,229,255,0.8), 0 0 100px rgba(0,229,255,0.3); }
+  }
+
+  .setup-sub {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  .setup-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+
+  .setup-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+  }
+
+  .setup-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 8px;
+  }
+
+  .setup-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.1);
+  }
+
+  .setup-note {
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .setup-note a { color: var(--accent); text-decoration: none; }
+
+  .setup-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(0,229,255,0.05));
+    border: 1px solid rgba(0,229,255,0.5);
+    border-radius: 10px;
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .setup-btn:active {
+    transform: scale(0.98);
+    background: rgba(0,229,255,0.2);
+  }
+
+  /* ===== MAIN APP SCREEN ===== */
+  #appScreen {
+    background: var(--bg);
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .topbar-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .live-dot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    color: var(--accent3);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .settings-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  /* Mode selector */
+  .mode-bar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+
+  .mode-bar::-webkit-scrollbar { display: none; }
+
+  .mode-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .mode-pill.active {
+    background: rgba(0,229,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .av {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .av.ai {
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.3);
+    color: var(--accent);
+  }
+
+  .av.me {
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: #a78bfa;
+  }
+
+  .bubble {
+    max-width: 78%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    line-height: 1.75;
+  }
+
+  .bubble.ai {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+
+  .bubble.user {
+    background: rgba(0,229,255,0.07);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--text);
+    border-bottom-right-radius: 4px;
+  }
+
+  /* Quick chips */
+  .chips {
+    padding: 8px 12px 4px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+
+  .chips::-webkit-scrollbar { display: none; }
+
+  .chip {
+    padding: 5px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .chip:active {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: scale(0.97);
+  }
+
+  /* Input bar */
+  .input-bar {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  textarea {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    padding: 10px 16px;
+    resize: none;
+    outline: none;
+    min-height: 42px;
+    max-height: 110px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: rgba(0,229,255,0.5); }
+  textarea::placeholder { color: var(--muted); }
+
+  .send-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(0,229,255,0.12);
+    border: 1px solid rgba(0,229,255,0.4);
+    color: var(--accent);
+    font-size: 1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .send-btn:active { transform: scale(0.92); background: rgba(0,229,255,0.25); }
+  .send-btn:disabled { opacity: 0.35; }
+
+  /* Typing */
+  .typing-dots {
+    display: flex; gap: 4px; align-items: center;
+    padding: 6px 0;
+  }
+  .typing-dots span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.5;
+    animation: tdot 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes tdot {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* Market ticker */
+  .ticker {
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+    background: rgba(0,229,255,0.03);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .ticker-inner {
+    display: flex;
+    gap: 24px;
+    padding: 6px 14px;
+    animation: scroll 20s linear infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .tick-item {
+    font-size: 0.62rem;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .tick-name { color: var(--muted); }
+  .tick-val { font-weight: 500; }
+  .up { color: #10b981; }
+  .dn { color: #ef4444; }
+
+  /* Settings overlay */
+  #settingsOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    transition: opacity 0.3s;
+  }
+
+  #settingsOverlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .settings-sheet {
+    width: 100%;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px;
+    padding-bottom: calc(var(--safe-bottom) + 24px);
+    transform: translateY(0);
+    transition: transform 0.3s;
+  }
+
+  #settingsOverlay.hidden .settings-sheet {
+    transform: translateY(100%);
+  }
+
+  .sheet-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 20px;
+    letter-spacing: 0.08em;
+  }
+
+  .sheet-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sheet-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    padding: 12px 14px;
+    outline: none;
+    margin-bottom: 16px;
+  }
+
+  .sheet-input:focus { border-color: var(--accent); }
+
+  .sheet-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .sheet-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-save {
+    background: rgba(0,229,255,0.12);
+    border: 1px solid rgba(0,229,255,0.4);
+    color: var(--accent);
+  }
+
+  .btn-cancel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .btn-clear {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #ef4444;
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ===== PERAK APPROVAL PANEL ===== */
+  .perak-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    z-index: 60;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .perak-panel.show { display: flex; }
+  .perak-sheet {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 1px solid rgba(255,193,7,0.3);
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+    padding-bottom: calc(var(--safe-bottom) + 20px);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .perak-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .perak-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffc107;
+    letter-spacing: 0.08em;
+  }
+  .perak-close {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .perak-preview {
+    background: var(--surface2);
+    border: 1px solid rgba(255,193,7,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--text);
+    margin-bottom: 14px;
+    min-height: 120px;
+    white-space: pre-wrap;
+  }
+  .perak-edit {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    padding: 12px;
+    resize: vertical;
+    outline: none;
+    min-height: 100px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .perak-edit:focus { border-color: #ffc107; }
+  .perak-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .perak-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    text-align: center;
+  }
+  .btn-approve {
+    background: rgba(255,193,7,0.15);
+    border: 1px solid rgba(255,193,7,0.5) !important;
+    color: #ffc107;
+  }
+  .btn-copy {
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.4) !important;
+    color: #10b981;
+  }
+  .btn-edit-toggle {
+    background: rgba(124,58,237,0.1);
+    border: 1px solid rgba(124,58,237,0.4) !important;
+    color: #a78bfa;
+  }
+  .btn-discard {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3) !important;
+    color: #ef4444;
+  }
+  .perak-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .badge-news { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+  .badge-job { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+  .badge-viral { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid rgba(255,193,7,0.3); }
+
+  /* ===== SCHEDULER / QUEUE PANEL ===== */
+  .queue-panel { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); backdrop-filter:blur(10px); z-index:70; align-items:flex-start; justify-content:center; padding-top:20px; }
+  .queue-panel.show { display:flex; }
+  .queue-sheet { width:100%; max-width:520px; background:var(--surface); border:1px solid rgba(255,193,7,0.25); border-radius:20px; padding:20px; max-height:90vh; overflow-y:auto; margin:0 12px; }
+  .queue-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .queue-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:#ffc107; }
+  .queue-close { background:none; border:1px solid var(--border); border-radius:8px; color:var(--muted); padding:5px 10px; font-size:0.8rem; cursor:pointer; }
+  .scheduler-box { background:rgba(255,193,7,0.04); border:1px solid rgba(255,193,7,0.15); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .scheduler-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .scheduler-label { font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+  .scheduler-val { font-size:0.82rem; color:#ffc107; font-weight:600; }
+  .time-input { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'DM Mono',monospace; font-size:0.85rem; padding:8px 12px; outline:none; width:120px; text-align:center; }
+  .time-input:focus { border-color:#ffc107; }
+  .toggle-switch { position:relative; width:48px; height:26px; cursor:pointer; }
+  .toggle-switch input { opacity:0; width:0; height:0; }
+  .toggle-track { position:absolute; inset:0; background:var(--surface2); border:1px solid var(--border); border-radius:13px; transition:0.3s; }
+  .toggle-switch input:checked + .toggle-track { background:rgba(255,193,7,0.3); border-color:#ffc107; }
+  .toggle-track::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; background:var(--muted); border-radius:50%; transition:0.3s; }
+  .toggle-switch input:checked + .toggle-track::before { transform:translateX(22px); background:#ffc107; }
+  .queue-list { display:flex; flex-direction:column; gap:10px; }
+  .queue-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; position:relative; }
+  .queue-item.done { opacity:0.45; }
+  .queue-item-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .queue-type-badge { font-size:0.6rem; font-weight:700; letter-spacing:0.08em; padding:2px 7px; border-radius:8px; }
+  .queue-time { font-size:0.65rem; color:var(--muted); }
+  .queue-preview { font-size:0.75rem; color:var(--text); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .queue-item-actions { display:flex; gap:6px; margin-top:10px; }
+  .qi-btn { padding:5px 10px; border-radius:7px; font-size:0.65rem; font-family:'Syne',sans-serif; font-weight:700; cursor:pointer; }
+  .qi-copy { background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#10b981; }
+  .qi-del  { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); color:#ef4444; }
+  .gen-btn-main { width:100%; padding:13px; background:rgba(255,193,7,0.1); border:1px solid rgba(255,193,7,0.4); border-radius:10px; color:#ffc107; font-family:'Syne',sans-serif; font-size:0.85rem; font-weight:700; cursor:pointer; letter-spacing:0.05em; margin-bottom:10px; transition:all 0.2s; }
+  .gen-btn-main:active { transform:scale(0.98); }
+  .gen-btn-main:disabled { opacity:0.4; cursor:not-allowed; }
+  .empty-queue { text-align:center; color:var(--muted); font-size:0.75rem; padding:30px 0; }
+  .sched-fab { position:fixed; bottom:calc(var(--safe-bottom) + 80px); right:16px; width:44px; height:44px; border-radius:50%; background:rgba(255,193,7,0.12); border:1px solid rgba(255,193,7,0.4); color:#ffc107; font-size:1.1rem; cursor:pointer; display:none; align-items:center; justify-content:center; z-index:20; box-shadow:0 0 20px rgba(255,193,7,0.15); transition:all 0.2s; }
+  .sched-fab.visible { display:flex; }
+  .sched-fab:active { transform:scale(0.92); }
+  .sched-notif { position:absolute; top:-4px; right:-4px; width:16px; height:16px; background:#ef4444; border-radius:50%; font-size:0.55rem; font-weight:700; color:white; display:flex; align-items:center; justify-content:center; }
+
+  .toast {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 80px);
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 10px 20px;
+    font-size: 0.75rem;
+    color: var(--text);
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div class="screen" id="setupScreen">
+  <div class="setup-logo">NEXUS</div>
+  <div class="setup-sub">Personal AI Assistant</div>
+
+  <div class="setup-card">
+    <div class="setup-label">🔑 Masukkan Claude API Key</div>
+    <input type="password" class="setup-input" id="setupKey" placeholder="sk-ant-api03-..." />
+    <div class="setup-note">
+      Dapatkan API key percuma di<br>
+      <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key
+    </div>
+    <button class="setup-btn" onclick="completeSetup()">MULA NEXUS →</button>
+  </div>
+</div>
+
+<!-- MAIN APP SCREEN -->
+<div class="screen hidden" id="appScreen">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">NEXUS</div>
+    <div class="topbar-right">
+      <div class="live-dot"><div class="dot"></div><span>LIVE</span></div>
+      <button class="settings-btn" onclick="openSettings()">⚙️</button>
+    </div>
+  </div>
+
+  <!-- Market ticker -->
+  <div class="ticker">
+    <div class="ticker-inner" id="tickerInner">
+      <span class="tick-item"><span class="tick-name">BTC</span><span class="tick-val up" id="t-btc">...</span></span>
+      <span class="tick-item"><span class="tick-name">ETH</span><span class="tick-val up" id="t-eth">...</span></span>
+      <span class="tick-item"><span class="tick-name">GOLD</span><span class="tick-val up">$3,050</span></span>
+      <span class="tick-item"><span class="tick-name">USD/MYR</span><span class="tick-val">4.42</span></span>
+      <span class="tick-item"><span class="tick-name">KLCI</span><span class="tick-val up">1,580</span></span>
+      <!-- Duplicate for seamless loop -->
+      <span class="tick-item"><span class="tick-name">BTC</span><span class="tick-val up" id="t-btc2">...</span></span>
+      <span class="tick-item"><span class="tick-name">ETH</span><span class="tick-val up" id="t-eth2">...</span></span>
+      <span class="tick-item"><span class="tick-name">GOLD</span><span class="tick-val up">$3,050</span></span>
+      <span class="tick-item"><span class="tick-name">USD/MYR</span><span class="tick-val">4.42</span></span>
+      <span class="tick-item"><span class="tick-name">KLCI</span><span class="tick-val up">1,580</span></span>
+    </div>
+  </div>
+
+  <!-- Mode pills -->
+  <div class="mode-bar">
+    <button class="mode-pill active" onclick="setMode('general',this)">🤖 Umum</button>
+    <button class="mode-pill" onclick="setMode('trading',this)">📈 Trading</button>
+    <button class="mode-pill" onclick="setMode('social',this)">📱 Sosial</button>
+    <button class="mode-pill" onclick="setMode('email',this)">✉️ Emel</button>
+    <button class="mode-pill" onclick="setMode('news',this)">🗞️ Berita</button>
+    <button class="mode-pill" onclick="setMode('agama',this)">🕌 Agama</button>
+    <button class="mode-pill" onclick="setMode('perak',this)" style="border-color:rgba(255,193,7,0.4);color:#ffc107;">🏔️ Perak</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages">
+    <div class="msg">
+      <div class="av ai">AI</div>
+      <div class="bubble ai">Assalamualaikum! Saya <strong>NEXUS</strong> — pembantu AI peribadi anda. Pilih mod di atas dan taip soalan anda. 🚀</div>
+    </div>
+  </div>
+
+  <!-- Quick chips -->
+  <div class="chips" id="chips">
+    <div class="chip" onclick="useChip(this)">Apa berita terkini?</div>
+    <div class="chip" onclick="useChip(this)">Analisis pasaran</div>
+    <div class="chip" onclick="useChip(this)">Caption IG viral</div>
+    <div class="chip" onclick="useChip(this)">Tulis emel</div>
+  </div>
+
+  <!-- Input bar -->
+  <div class="input-bar">
+    <div class="input-row">
+      <textarea id="msgInput" placeholder="Taip mesej..." rows="1"
+        oninput="autoResize(this)"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="send()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings overlay -->
+<div id="settingsOverlay" class="hidden" onclick="closeSettingsOutside(event)">
+  <div class="settings-sheet">
+    <div class="sheet-title">⚙️ TETAPAN</div>
+    <div class="sheet-label">API Key</div>
+    <input type="password" class="sheet-input" id="settingsKey" placeholder="sk-ant-api03-..." />
+    <div class="sheet-row">
+      <button class="sheet-btn btn-cancel" onclick="closeSettings()">Batal</button>
+      <button class="sheet-btn btn-save" onclick="saveSettings()">Simpan</button>
+    </div>
+    <button class="btn-clear" onclick="clearChat()">🗑️ Kosongkan Chat</button>
+  </div>
+</div>
+
+<!-- Perak Approval Panel -->
+<div id="perakPanel" class="perak-panel" onclick="closePanelOutside(event)">
+  <div class="perak-sheet">
+    <div class="perak-header">
+      <div class="perak-title">🏔️ SEMAK & LULUSKAN POST</div>
+      <button class="perak-close" onclick="closePerakPanel()">✕ Tutup</button>
+    </div>
+    <div id="perakBadge" class="perak-badge badge-news">📰 BERITA</div>
+    <div id="perakPreview" class="perak-preview">Tiada kandungan lagi...</div>
+    <textarea id="perakEditArea" class="perak-edit" placeholder="Edit post di sini..."></textarea>
+    <div class="perak-actions">
+      <button class="perak-btn btn-copy" onclick="copyPost()">📋 Copy Post</button>
+      <button class="perak-btn btn-edit-toggle" onclick="toggleEdit()">✏️ Edit</button>
+      <button class="perak-btn btn-discard" onclick="closePerakPanel()">🗑️ Buang</button>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.15);border-radius:8px;font-size:0.65rem;color:var(--muted);line-height:1.6;">
+      💡 <strong style="color:#ffc107;">Cara post ke FB:</strong> Copy post → Buka FB Group Perak Kamuniti → Paste → Post. Browser extension auto-post akan ditambah dalam versi akan datang.
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Scheduler FAB -->
+<button class="sched-fab" id="schedFab" onclick="openQueue()">
+  📅
+  <span class="sched-notif" id="schedNotif" style="display:none">0</span>
+</button>
+
+<!-- Queue Panel -->
+<div id="queuePanel" class="queue-panel" onclick="closeQueueOutside(event)">
+  <div class="queue-sheet">
+    <div class="queue-header">
+      <div class="queue-title">📅 QUEUE POST PERAK</div>
+      <button class="queue-close" onclick="closeQueue()">✕ Tutup</button>
+    </div>
+
+    <!-- Scheduler Settings -->
+    <div class="scheduler-box">
+      <div class="scheduler-row">
+        <span class="scheduler-label">⏰ Masa Auto-Generate</span>
+        <input type="time" class="time-input" id="schedTime" value="08:00" onchange="saveSchedSettings()">
+      </div>
+      <div class="scheduler-row">
+        <span class="scheduler-label">🔄 Auto-generate harian</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="schedToggle" onchange="toggleScheduler()">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="scheduler-row" style="margin-bottom:0">
+        <span class="scheduler-label">📊 Status</span>
+        <span class="scheduler-val" id="schedStatus">TIDAK AKTIF</span>
+      </div>
+    </div>
+
+    <!-- Generate Now Button -->
+    <button class="gen-btn-main" id="genNowBtn" onclick="generateTodayPost()">
+      ⚡ Jana Post Hari Ini Sekarang
+    </button>
+
+    <!-- Queue List -->
+    <div style="font-size:0.68rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px;">
+      📋 Senarai Post
+    </div>
+    <div class="queue-list" id="queueList">
+      <div class="empty-queue">Tiada post dalam queue lagi.<br>Tekan butang di atas untuk jana post pertama!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+let apiKey = '';
+let currentMode = 'general';
+let history = [];
+
+const SYSTEM_PROMPTS = {
+  general: `Anda adalah NEXUS, pembantu AI peribadi yang bijak dan membantu. Berbahasa Melayu. Jawapan padat dan berguna.`,
+  trading: `Anda adalah NEXUS Trading Analyst — pakar analisis pasaran kewangan, forex, crypto, saham. Berikan analisis tepat dan objektif dengan peringatan risiko. Berbahasa Melayu.`,
+  social: `Anda adalah NEXUS Social Media Expert. Mahir membuat caption viral, hashtag, skrip TikTok/IG/FB untuk audiens Malaysia. Kandungan menarik dan engaging. Berbahasa Melayu.`,
+  email: `Anda adalah NEXUS Email Assistant — pakar emel profesional Bahasa Melayu dan Inggeris. Sentiasa sediakan subjek dan badan emel yang jelas.`,
+  news: `Anda adalah NEXUS News Analyst. Cari dan analisis berita terkini ekonomi, kewangan, teknologi, Malaysia. Berikan konteks dan implikasi. Berbahasa Melayu.`,
+  agama: `Anda pakar agama Islam berdasarkan Al-Quran dan Hadith. Berikan pandangan yang adil dan ilmiah. Sentiasa mengingatkan untuk rujuk ustaz/ulama untuk isu besar.`,
+  perak: `Anda adalah NEXUS Perak Kamuniti Agent — pakar kandungan untuk group Facebook "Perak Kamuniti". Tugas anda:
+1. Cari berita terkini di Perak, Malaysia (jenayah, pembangunan, acara, politik tempatan)
+2. Cari jawatan kosong / peluang pekerjaan di Perak
+3. Cari kisah viral atau trending yang berlaku di Perak
+4. Format semua kandungan sebagai post Facebook yang menarik dengan emoji, hashtag relevan (#PerakKamuniti #Perak #Malaysia), dan caption yang engaging untuk audiens Malaysia.
+Sentiasa gunakan web search untuk maklumat terkini. Tulis dalam Bahasa Melayu yang santai dan mudah difahami.`
+};
+
+const CHIPS = {
+  general: ['Apa berita terkini?','Nasihat untuk hari ini','Motivasi pagi','Apa itu AI?'],
+  trading: ['Analisis BTC sekarang','Trend forex MYR','Signal emas hari ini','Strategi scalping'],
+  social: ['Caption IG viral','Skrip TikTok 30s','Post FB promosi','Hashtag trending Malaysia'],
+  email: ['Emel perkenalan diri','Follow-up pelanggan','Tawaran kerja','Emel terima kasih'],
+  news: ['Berita ekonomi Malaysia','Berita crypto hari ini','Berita dunia penting','Analisis KLCI'],
+  agama: ['Hukum forex trading','Doa pagi hari','Hukum pelaburan saham','Adab perniagaan Islam'],
+  perak: ['📰 Berita Perak terkini','💼 Kerja kosong di Perak','🔥 Kisah viral Perak','📝 Jana post hari ini']
+};
+
+// ─── Init ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('nexus_key');
+  if (saved) {
+    apiKey = saved;
+    showApp();
+  }
+  loadPrices();
+  setInterval(loadPrices, 60000);
+  loadQueue().then(() => updateQueueBadge());
+  loadSchedSettings();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+  }
+});
+
+// ─── Setup ────────────────────────────────────────────
+function completeSetup() {
+  const key = document.getElementById('setupKey').value.trim();
+  if (!key || !key.startsWith('sk-ant')) {
+    showToast('❌ API key tidak sah. Semak semula.');
+    return;
+  }
+  apiKey = key;
+  localStorage.setItem('nexus_key', key);
+  showApp();
+  showToast('✅ NEXUS diaktifkan!');
+}
+
+function showApp() {
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+}
+
+// ─── Mode ─────────────────────────────────────────────
+function setMode(mode, btn) {
+  currentMode = mode;
+  history = [];
+  document.querySelectorAll('.mode-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateChips();
+  updatePerakFab(mode);
+
+  const greet = {
+    general: '🤖 Mod Umum — Saya sedia membantu anda!',
+    trading: '📈 Mod Trading — Mari analisis pasaran bersama!',
+    social: '📱 Mod Sosial — Jom buat kandungan viral!',
+    email: '✉️ Mod Emel — Tulis emel profesional dengan mudah!',
+    news: '🗞️ Mod Berita — Saya akan cari berita terkini untuk anda!',
+    agama: '🕌 Mod Agama — Bertanya dengan penuh adab. Sentiasa rujuk ulama untuk isu besar.',
+    perak: '🏔️ Mod Perak Kamuniti — Saya akan carikan berita, kerja kosong & kisah viral dari Perak untuk post FB anda hari ini!'
+  };
+  addMsg('ai', greet[mode]);
+}
+
+function updateChips() {
+  const c = document.getElementById('chips');
+  c.innerHTML = CHIPS[currentMode].map(t =>
+    `<div class="chip" onclick="useChip(this)">${t}</div>`
+  ).join('');
+}
+
+function useChip(el) {
+  document.getElementById('msgInput').value = el.textContent;
+  send();
+}
+
+// ─── Chat ─────────────────────────────────────────────
+function addMsg(role, text) {
+  const msgs = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = `msg${role === 'user' ? ' user' : ''}`;
+  d.innerHTML = `
+    <div class="av ${role === 'user' ? 'me' : 'ai'}">${role === 'user' ? 'U' : 'AI'}</div>
+    <div class="bubble ${role === 'user' ? 'user' : 'ai'}">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = 'msg'; d.id = 'typing';
+  d.innerHTML = `<div class="av ai">AI</div><div class="bubble ai"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function send() {
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text || !apiKey) {
+    if (!apiKey) showToast('⚠️ Tiada API key. Buka tetapan ⚙️');
+    return;
+  }
+
+  addMsg('user', text);
+  inp.value = ''; inp.style.height = 'auto';
+  history.push({ role: 'user', content: text });
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  showTyping();
+
+  try {
+    const needSearch = ['berita','harga','terkini','hari ini','sekarang','latest','news','kerja','viral','perak'].some(w => text.toLowerCase().includes(w)) || currentMode === 'news' || currentMode === 'perak';
+
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: SYSTEM_PROMPTS[currentMode],
+      messages: history
+    };
+
+    if (needSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      hideTyping();
+      addMsg('ai', `❌ Ralat: ${data.error.message}`);
+      history.pop();
+    } else {
+      const reply = data.content.map(i => i.type === 'text' ? i.text : '').filter(Boolean).join('\n');
+      history.push({ role: 'assistant', content: reply });
+      hideTyping();
+      addMsg('ai', reply);
+      checkAndShowPerakPanel(reply, text);
+    }
+  } catch(e) {
+    hideTyping();
+    addMsg('ai', '❌ Tiada sambungan internet. Cuba semula.');
+    history.pop();
+  }
+
+  btn.disabled = false;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+// ─── Settings ─────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingsKey').value = '';
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.add('hidden');
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+}
+
+function saveSettings() {
+  const key = document.getElementById('settingsKey').value.trim();
+  if (key) {
+    apiKey = key;
+    localStorage.setItem('nexus_key', key);
+    showToast('✅ API key dikemas kini!');
+  }
+  closeSettings();
+}
+
+function clearChat() {
+  history = [];
+  document.getElementById('messages').innerHTML = '';
+  addMsg('ai', '🗑️ Chat telah dikosongkan. Saya sedia membantu anda semula!');
+  closeSettings();
+  showToast('Chat dikosongkan');
+}
+
+// ─── Toast ────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Scheduler & Queue ───────────────────────────────
+let postQueue = [];
+let schedCheckInterval = null;
+
+const GITHUB_QUEUE_URL = 'https://raw.githubusercontent.com/DealSense-MY/nexus-pwa/main/queue.json';
+
+async function loadQueue() {
+  // Cuba fetch dari GitHub dulu (post yang dijana oleh scheduler)
+  try {
+    const res = await fetch(GITHUB_QUEUE_URL + '?t=' + Date.now());
+    if (res.ok) {
+      const ghQueue = await res.json();
+      // Merge dengan local queue, buang duplicate
+      const localQueue = JSON.parse(localStorage.getItem('perak_queue') || '[]');
+      const merged = [...ghQueue, ...localQueue];
+      const seen = new Set();
+      postQueue = merged.filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+      postQueue = postQueue.slice(0, 30);
+      return;
+    }
+  } catch(e) {}
+  // Fallback: guna localStorage sahaja
+  try { postQueue = JSON.parse(localStorage.getItem('perak_queue') || '[]'); } catch(e) { postQueue = []; }
+}
+
+function saveQueue() {
+  // Simpan post yang dijana manually dalam localStorage
+  const localOnly = postQueue.filter(i => i.source !== 'github');
+  localStorage.setItem('perak_queue', JSON.stringify(localOnly));
+  updateQueueBadge();
+}
+
+function loadSchedSettings() {
+  const time = localStorage.getItem('sched_time') || '08:00';
+  const active = localStorage.getItem('sched_active') === 'true';
+  document.getElementById('schedTime').value = time;
+  document.getElementById('schedToggle').checked = active;
+  updateSchedStatus(active);
+  if (active) startSchedChecker();
+}
+
+function saveSchedSettings() {
+  localStorage.setItem('sched_time', document.getElementById('schedTime').value);
+}
+
+function toggleScheduler() {
+  const active = document.getElementById('schedToggle').checked;
+  localStorage.setItem('sched_active', active);
+  updateSchedStatus(active);
+  if (active) {
+    startSchedChecker();
+    showToast('✅ Auto-generate diaktifkan!');
+  } else {
+    stopSchedChecker();
+    showToast('⏹️ Auto-generate dihentikan');
+  }
+}
+
+function updateSchedStatus(active) {
+  const el = document.getElementById('schedStatus');
+  if (!el) return;
+  el.textContent = active ? 'AKTIF ✓' : 'TIDAK AKTIF';
+  el.style.color = active ? '#10b981' : '#ffc107';
+}
+
+function startSchedChecker() {
+  stopSchedChecker();
+  schedCheckInterval = setInterval(checkSchedule, 60000);
+  checkSchedule();
+}
+
+function stopSchedChecker() {
+  if (schedCheckInterval) clearInterval(schedCheckInterval);
+}
+
+function checkSchedule() {
+  const active = localStorage.getItem('sched_active') === 'true';
+  if (!active || !apiKey) return;
+  const schedTime = localStorage.getItem('sched_time') || '08:00';
+  const now = new Date();
+  const [h, m] = schedTime.split(':').map(Number);
+  const lastGen = localStorage.getItem('last_gen_date');
+  const today = now.toDateString();
+  if (now.getHours() === h && now.getMinutes() === m && lastGen !== today) {
+    localStorage.setItem('last_gen_date', today);
+    generateTodayPost(true);
+  }
+}
+
+async function generateTodayPost(auto = false) {
+  if (!apiKey) { showToast('⚠️ Tiada API key. Buka tetapan ⚙️'); return; }
+  const btn = document.getElementById('genNowBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Jana post...'; }
+
+  const today = new Date().toLocaleDateString('ms-MY', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const prompt = `Hari ini adalah ${today}. Jana satu post Facebook yang lengkap untuk group Perak Kamuniti. Post mesti mengandungi:
+1. 📰 Satu berita terkini dari Perak Malaysia (cari berita semasa)
+2. 💼 Satu atau dua jawatan kosong di Perak (kerja terkini)
+3. 🔥 Satu kisah viral atau menarik dari Perak
+Format sebagai satu post FB panjang dengan emoji menarik, hashtag (#PerakKamuniti #Perak #Malaysia #PerakNews) dan bahasa Melayu santai. Pisahkan setiap bahagian dengan jelas.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: `Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook yang menarik dan informatif untuk group Perak Kamuniti. Sentiasa cari maklumat terkini menggunakan web search.`,
+        messages: [{ role:'user', content: prompt }],
+        tools: [{ type:'web_search_20250305', name:'web_search' }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content.map(i => i.type === 'text' ? i.text : '').filter(Boolean).join('\n');
+    if (reply) {
+      const item = {
+        id: Date.now(),
+        content: reply,
+        type: 'daily',
+        date: new Date().toLocaleString('ms-MY'),
+        done: false
+      };
+      postQueue.unshift(item);
+      if (postQueue.length > 30) postQueue = postQueue.slice(0, 30);
+      saveQueue();
+      renderQueue();
+      if (!auto) showPerakApproval(reply, 'post');
+      showToast(auto ? '📅 Post harian dijana auto!' : '✅ Post berjaya dijana!');
+    }
+  } catch(e) {
+    showToast('❌ Gagal jana post. Cuba semula.');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Jana Post Hari Ini Sekarang'; }
+}
+
+function renderQueue() {
+  const list = document.getElementById('queueList');
+  if (!list) return;
+  if (!postQueue.length) {
+    list.innerHTML = '<div class="empty-queue">Tiada post dalam queue lagi.<br>Tekan butang di atas untuk jana post pertama!</div>';
+    return;
+  }
+  const badges = {
+    daily: { cls:'badge-news', txt:'📅 HARIAN' },
+    news:  { cls:'badge-news', txt:'📰 BERITA' },
+    job:   { cls:'badge-job',  txt:'💼 KERJA' },
+    viral: { cls:'badge-viral',txt:'🔥 VIRAL' },
+    post:  { cls:'badge-news', txt:'📝 POST' }
+  };
+  list.innerHTML = postQueue.map((item, i) => {
+    const b = badges[item.type] || badges.post;
+    return `<div class="queue-item${item.done ? ' done' : ''}" id="qi-${item.id}">
+      <div class="queue-item-top">
+        <span class="queue-type-badge ${b.cls}">${b.txt}</span>
+        <span class="queue-time">${item.date}</span>
+      </div>
+      <div class="queue-preview">${item.content.replace(/\n/g,' ')}</div>
+      <div class="queue-item-actions">
+        <button class="qi-btn qi-copy" onclick="copyQueueItem(${item.id})">📋 Copy</button>
+        <button class="qi-btn qi-copy" onclick="previewQueueItem(${item.id})" style="background:rgba(255,193,7,0.1);border-color:rgba(255,193,7,0.3);color:#ffc107;">👁️ Preview</button>
+        <button class="qi-btn qi-del" onclick="deleteQueueItem(${item.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyQueueItem(id) {
+  const item = postQueue.find(i => i.id === id);
+  if (!item) return;
+  navigator.clipboard.writeText(item.content).then(() => {
+    item.done = true;
+    saveQueue();
+    renderQueue();
+    showToast('✅ Post disalin! Paste di FB Perak Kamuniti');
+  });
+}
+
+function previewQueueItem(id) {
+  const item = postQueue.find(i => i.id === id);
+  if (!item) return;
+  closeQueue();
+  showPerakApproval(item.content, item.type);
+}
+
+function deleteQueueItem(id) {
+  postQueue = postQueue.filter(i => i.id !== id);
+  saveQueue();
+  renderQueue();
+}
+
+function updateQueueBadge() {
+  const pending = postQueue.filter(i => !i.done).length;
+  const notif = document.getElementById('schedNotif');
+  if (!notif) return;
+  if (pending > 0) { notif.style.display = 'flex'; notif.textContent = pending; }
+  else { notif.style.display = 'none'; }
+}
+
+async function openQueue() {
+  const btn = document.getElementById('genNowBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Refresh queue...'; }
+  await loadQueue();
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Jana Post Hari Ini Sekarang'; }
+  renderQueue();
+  document.getElementById('queuePanel').classList.add('show');
+}
+
+function closeQueue() {
+  document.getElementById('queuePanel').classList.remove('show');
+}
+
+function closeQueueOutside(e) {
+  if (e.target === document.getElementById('queuePanel')) closeQueue();
+}
+
+// Show FAB only in Perak mode
+function updatePerakFab(mode) {
+  const fab = document.getElementById('schedFab');
+  if (!fab) return;
+  if (mode === 'perak') fab.classList.add('visible');
+  else fab.classList.remove('visible');
+}
+
+// ─── Perak Kamuniti ──────────────────────────────────
+let currentPostContent = '';
+let isEditing = false;
+
+function showPerakApproval(content, type) {
+  currentPostContent = content;
+  isEditing = false;
+  const panel = document.getElementById('perakPanel');
+  const preview = document.getElementById('perakPreview');
+  const badge = document.getElementById('perakBadge');
+  const editArea = document.getElementById('perakEditArea');
+
+  preview.innerHTML = content.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  preview.style.display = 'block';
+  editArea.style.display = 'none';
+  editArea.value = content;
+
+  const badges = {
+    news: { cls: 'badge-news', txt: '📰 BERITA PERAK' },
+    job:  { cls: 'badge-job',  txt: '💼 KERJA KOSONG' },
+    viral:{ cls: 'badge-viral',txt: '🔥 KISAH VIRAL' },
+    post: { cls: 'badge-news', txt: '📝 POST HARIAN' }
+  };
+  const b = badges[type] || badges.post;
+  badge.className = `perak-badge ${b.cls}`;
+  badge.textContent = b.txt;
+
+  panel.classList.add('show');
+}
+
+function closePerakPanel() {
+  document.getElementById('perakPanel').classList.remove('show');
+}
+
+function closePanelOutside(e) {
+  if (e.target === document.getElementById('perakPanel')) closePerakPanel();
+}
+
+function toggleEdit() {
+  const preview = document.getElementById('perakPreview');
+  const editArea = document.getElementById('perakEditArea');
+  const btn = document.querySelector('.btn-edit-toggle');
+  isEditing = !isEditing;
+  if (isEditing) {
+    editArea.value = currentPostContent;
+    preview.style.display = 'none';
+    editArea.style.display = 'block';
+    editArea.focus();
+    btn.textContent = '👁️ Preview';
+  } else {
+    currentPostContent = editArea.value;
+    preview.innerHTML = currentPostContent.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    preview.style.display = 'block';
+    editArea.style.display = 'none';
+    btn.textContent = '✏️ Edit';
+  }
+}
+
+function copyPost() {
+  const content = isEditing ? document.getElementById('perakEditArea').value : currentPostContent;
+  navigator.clipboard.writeText(content).then(() => {
+    showToast('✅ Post disalin! Pergi paste di FB Perak Kamuniti');
+    closePerakPanel();
+  }).catch(() => {
+    showToast('⚠️ Salin manual dari kotak teks');
+  });
+}
+
+// Auto-detect Perak post content and show approval panel
+function checkAndShowPerakPanel(reply, userText) {
+  if (currentMode !== 'perak') return;
+  const lower = userText.toLowerCase();
+  let type = 'post';
+  if (lower.includes('berita') || lower.includes('news')) type = 'news';
+  else if (lower.includes('kerja') || lower.includes('job') || lower.includes('vacancy')) type = 'job';
+  else if (lower.includes('viral') || lower.includes('kisah')) type = 'viral';
+  showPerakApproval(reply, type);
+}
+
+// ─── Prices ──────────────────────────────────────────
+async function loadPrices() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true');
+    const d = await r.json();
+    if (d.bitcoin) {
+      const v = '$' + d.bitcoin.usd.toLocaleString();
+      ['t-btc','t-btc2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = v; el.className = `tick-val ${d.bitcoin.usd_24h_change >= 0 ? 'up' : 'dn'}`; }
+      });
+    }
+    if (d.ethereum) {
+      const v = '$' + d.ethereum.usd.toLocaleString();
+      ['t-eth','t-eth2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = v; el.className = `tick-val ${d.ethereum.usd_24h_change >= 0 ? 'up' : 'dn'}`; }
+      });
+    }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
