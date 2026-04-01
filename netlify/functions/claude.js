@@ -21,9 +21,19 @@ exports.handler = async (event) => {
       };
     }
 
-    const body = JSON.parse(event.body);
-    delete body.apiKey;
+   const body = JSON.parse(event.body);
+delete body.apiKey;
 
+if (!body.tools) {
+  body.tools = [
+    {
+      type: "web_search_20250305",
+      name: "web_search"
+    }
+  ];
+}
+
+body.tool_choice = { type: "auto" };
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
