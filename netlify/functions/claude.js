@@ -4,7 +4,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type, x-api-key, anthropic-version',
+        'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST, OPTIONS'
       },
       body: ''
@@ -12,8 +12,16 @@ exports.handler = async (event) => {
   }
 
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: { message: 'API key tidak dijumpai' } })
+      };
+    }
+
     const body = JSON.parse(event.body);
-    const apiKey = body.apiKey;
     delete body.apiKey;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -40,7 +48,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ error: { message: err.message } })
     };
   }
 };
