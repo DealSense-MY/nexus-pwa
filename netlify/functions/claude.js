@@ -11,29 +11,30 @@ exports.handler = async (event) => {
     };
   }
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: { message: 'API key tidak dikonfigurasi dalam server. Semak Netlify Environment Variables.' } })
+    };
+  }
+
+  let body;
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: { message: 'API key tidak dijumpai' } })
-      };
-    }
+    body = JSON.parse(event.body);
+  } catch (err) {
+    return {
+      statusCode: 400,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: { message: 'Request body tidak sah.' } })
+    };
+  }
 
-   const body = JSON.parse(event.body);
-delete body.apiKey;
+  // Remove apiKey if accidentally sent from client
+  delete body.apiKey;
 
-if (!body.tools) {
-  body.tools = [
-    {
-      type: "web_search_20250305",
-      name: "web_search"
-    }
-  ];
-}
-
-body.tool_choice = { type: "auto" };
+  try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -57,8 +58,8 @@ body.tool_choice = { type: "auto" };
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ error: { message: err.message } })
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: { message: 'Ralat server: ' + err.message } })
     };
   }
 };
