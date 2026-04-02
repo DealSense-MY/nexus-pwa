@@ -989,22 +989,27 @@ function getCache() {
 }
 
 function saveCache(cache) {
-  const keys = Object.keys(cache);
-  if (keys.length > CACHE_MAX) {
-    // FIFO — remove oldest entries
-    keys.slice(0, keys.length - CACHE_MAX).forEach(k => delete cache[k]);
+  const entries = Object.entries(cache);
+  if (entries.length > CACHE_MAX) {
+    // TRUE FIFO — sort by timestamp, remove oldest first
+    entries.sort((a, b) => (a[1].time || 0) - (b[1].time || 0));
+    const toRemove = entries.slice(0, entries.length - CACHE_MAX);
+    toRemove.forEach(([k]) => delete cache[k]);
   }
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
 }
 
 function getCached(text) {
   const cache = getCache();
-  return cache[normalizeKey(text)] || null;
+  const entry = cache[normalizeKey(text)];
+  if (!entry) return null;
+  // Support both old format (string) and new format ({ data, time })
+  return typeof entry === 'object' && entry.data ? entry.data : entry;
 }
 
 function setCached(text, reply) {
   const cache = getCache();
-  cache[normalizeKey(text)] = reply;
+  cache[normalizeKey(text)] = { data: reply, time: Date.now() };
   saveCache(cache);
 }
 
