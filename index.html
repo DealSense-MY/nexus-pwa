@@ -798,6 +798,7 @@
   <div class="topbar">
     <div class="topbar-logo">NEXUS</div>
     <div class="topbar-right">
+      <div id="modeBadge" class="mode-badge">🤖 Umum</div>
       <div class="live-dot"><div class="dot"></div><span>LIVE</span></div>
       <button class="settings-btn" onclick="openSettings()">⚙️</button>
     </div>
@@ -962,7 +963,84 @@
 // ─── State ───────────────────────────────────────────
 let apiKey = '';
 let currentMode = 'general';
-let history = [];
+
+// Per-mode chat history — fixes mode separation bug
+let chatHistory = {
+  general: [], trading: [], social: [],
+  email: [], news: [], agama: [], perak: []
+};
+
+// Per-mode rendered messages (for UI restore)
+let chatMessages = {
+  general: [], trading: [], social: [],
+  email: [], news: [], agama: [], perak: []
+};
+
+// ─── Cache System ─────────────────────────────────────
+const CACHE_KEY = 'nexus_ai_cache';
+const CACHE_MAX = 50;
+
+function normalizeKey(text) {
+  return text.toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+function getCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveCache(cache) {
+  const keys = Object.keys(cache);
+  if (keys.length > CACHE_MAX) {
+    // FIFO — remove oldest entries
+    keys.slice(0, keys.length - CACHE_MAX).forEach(k => delete cache[k]);
+  }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+
+function getCached(text) {
+  const cache = getCache();
+  return cache[normalizeKey(text)] || null;
+}
+
+function setCached(text, reply) {
+  const cache = getCache();
+  cache[normalizeKey(text)] = reply;
+  saveCache(cache);
+}
+
+// ─── Chat History Persist ─────────────────────────────
+const HISTORY_KEY = 'nexus_chat_history';
+const MESSAGES_KEY = 'nexus_chat_messages';
+
+function persistChatHistory() {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory));
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(chatMessages));
+  } catch {}
+}
+
+function loadChatHistory() {
+  try {
+    const h = localStorage.getItem(HISTORY_KEY);
+    const m = localStorage.getItem(MESSAGES_KEY);
+    if (h) {
+      const parsed = JSON.parse(h);
+      Object.keys(chatHistory).forEach(mode => {
+        if (parsed[mode] && Array.isArray(parsed[mode])) {
+          chatHistory[mode] = parsed[mode];
+        }
+      });
+    }
+    if (m) {
+      const parsed = JSON.parse(m);
+      Object.keys(chatMessages).forEach(mode => {
+        if (parsed[mode] && Array.isArray(parsed[mode])) {
+          chatMessages[mode] = parsed[mode];
+        }
+      });
+    }
+  } catch {}
+}
 
 const SYSTEM_PROMPTS = {
   general: `Anda adalah NEXUS, pembantu AI peribadi yang bijak dan membantu. Berbahasa Melayu. Jawapan padat dan berguna.`,
@@ -971,99 +1049,28 @@ const SYSTEM_PROMPTS = {
   email: `Anda adalah NEXUS Email Assistant — pakar emel profesional Bahasa Melayu dan Inggeris. Sentiasa sediakan subjek dan badan emel yang jelas.`,
   news: `Anda adalah NEXUS News Analyst. Cari dan analisis berita terkini ekonomi, kewangan, teknologi, Malaysia. Berikan konteks dan implikasi. Berbahasa Melayu.`,
   agama: `Anda pakar agama Islam berdasarkan Al-Quran dan Hadith. Berikan pandangan yang adil dan ilmiah. Sentiasa mengingatkan untuk rujuk ustaz/ulama untuk isu besar.`,
-  perak: `Anda adalah NEXUS Perak Kamuniti Agent — pakar menghasilkan kandungan Facebook berkualiti tinggi untuk komuniti negeri Perak, Malaysia.
+  perak: `Anda adalah NEXUS Perak Kamuniti Agent — pakar kandungan untuk group Facebook "Perak Kamuniti". 
 
-🎯 MATLAMAT:
-Hasilkan post yang REAL, SAHIH, dan BOLEH DIPERCAYAI — bukan sekadar cantik, tetapi berguna untuk orang sebenar.
+Format post WAJIB ikut susunan ini:
 
-━━━━━━━━━━━━━━━━━━━━━━
-⚠️ PERATURAN WAJIB (SANGAT PENTING)
-━━━━━━━━━━━━━━━━━━━━━━
+1️⃣ BAHAGIAN 1 — BERITA PERAK TERKINI
+- Cari 1 berita paling penting hari ini dari Perak Malaysia
+- Nyatakan sumber berita dan sertakan link artikel asal
+- Hashtag berkaitan berita tersebut
 
-1. WAJIB gunakan maklumat yang BENAR dan BOLEH DISAHKAN.
-2. DILARANG sama sekali mencipta (hallucinate) link, nama syarikat, atau berita.
-3. HANYA gunakan URL yang benar-benar wujud dan boleh diakses.
-4. Jika tiada maklumat sah ditemui:
-   → tulis: "Tiada sumber sah ditemui buat masa ini."
-5. Utamakan sumber berikut:
-   - Berita: Astro Awani, Berita Harian, The Star, Sinar Harian
-   - Kerja: JobStreet, Indeed, Maukerja
-6. Untuk jawatan kosong:
-   - WAJIB ada link APPLY sebenar
-   - Jika tiada link → JANGAN masukkan jawatan tersebut
+2️⃣ BAHAGIAN 2 — KISAH VIRAL PERAK  
+- Cari 1 kisah viral/menarik/lucu yang berlaku di Perak
+- Sertakan link sumber jika ada
+- Hashtag berkaitan kisah tersebut
 
-━━━━━━━━━━━━━━━━━━━━━━
-📦 FORMAT WAJIB POST
-━━━━━━━━━━━━━━━━━━━━━━
+3️⃣ BAHAGIAN 3 — JAWATAN KOSONG DI PERAK
+- Cari 2-3 jawatan kosong terkini di Perak
+- Setiap jawatan WAJIB ada: nama syarikat, jawatan, lokasi, dan link apply (JobStreet/Maukerja/Indeed)
+- Hashtag berkaitan kerja
 
-━━━━━━━━━━━━━━━━━━━━━━
-📰 BERITA PERAK HARI INI
-━━━━━━━━━━━━━━━━━━━━━━
-- Cari 1 berita TERKINI dari Perak (hari ini / sangat recent)
-- Tulis ringkasan padat (3-4 ayat)
-🔗 Sumber: [link artikel sebenar]
-#[hashtag berkaitan]
+Hashtag keseluruhan di hujung post mesti berkaitan dengan semua info di atas + #PerakKamuniti #Perak #Malaysia #InfoPerak
 
-Jika tiada:
-→ "Tiada sumber sah ditemui buat masa ini."
-
-━━━━━━━━━━━━━━━━━━━━━━
-🔥 KISAH VIRAL PERAK
-━━━━━━━━━━━━━━━━━━━━━━
-- Cari 1 kisah viral / menarik dari Perak
-- Ringkasan santai & engaging
-🔗 Sumber: [link sebenar jika ada]
-
-Jika tiada:
-→ "Tiada sumber sah ditemui buat masa ini."
-
-━━━━━━━━━━━━━━━━━━━━━━
-💼 JAWATAN KOSONG PERAK
-━━━━━━━━━━━━━━━━━━━━━━
-Cari 2-3 jawatan kosong SAHIH dari:
-JobStreet / Indeed / Maukerja sahaja
-
-Setiap jawatan WAJIB ada:
-🏢 Syarikat:
-👔 Jawatan:
-📍 Lokasi:
-🔗 Apply: [link sebenar & boleh klik]
-
-Jika tiada link sah:
-→ JANGAN masukkan jawatan tersebut
-
-━━━━━━━━━━━━━━━━━━━━━━
-🏁 HASHTAG
-━━━━━━━━━━━━━━━━━━━━━━
-#PerakKamuniti #Perak #Malaysia #InfoPerak #KerjaPerak #BeritaPerak
-
-━━━━━━━━━━━━━━━━━━━━━━
-🎨 GAYA PENULISAN
-━━━━━━━━━━━━━━━━━━━━━━
-- Bahasa Melayu santai
-- Mudah dibaca
-- Guna emoji secukupnya
-- Tidak terlalu panjang
-- Fokus kepada nilai (value), bukan filler
-
-━━━━━━━━━━━━━━━━━━━━━━
-🚫 LARANGAN KERAS
-━━━━━━━━━━━━━━━━━━━━━━
-- Jangan reka link
-- Jangan guna placeholder
-- Jangan tulis URL palsu
-- Jangan isi maklumat jika tidak pasti
-
-━━━━━━━━━━━━━━━━━━━━━━
-✅ CHECK SEBELUM OUTPUT
-━━━━━━━━━━━━━━━━━━━━━━
-Pastikan:
-- Semua link boleh diakses
-- Semua info nampak real & logik
-- Tiada maklumat rekaan
-
-Jika gagal → buang bahagian tersebut dan tulis:
-"Tiada sumber sah ditemui"
+Tulis dalam Bahasa Melayu santai, emoji menarik, format jelas dan mudah dibaca. Sentiasa guna web search untuk maklumat terkini.`
 };
 
 const CHIPS = {
@@ -1079,7 +1086,15 @@ const CHIPS = {
 // ─── Init ─────────────────────────────────────────────
 window.addEventListener('load', () => {
   const auth = localStorage.getItem('nexus_auth');
-  if (auth === '1') showApp();
+  loadChatHistory();
+  if (auth === '1') {
+    showApp();
+    // Restore current mode chat
+    renderChat(chatMessages[currentMode] || []);
+    if (!chatMessages[currentMode] || chatMessages[currentMode].length === 0) {
+      addMsg('ai', MODE_GREET[currentMode]);
+    }
+  }
   loadPrices();
   setInterval(loadPrices, 60000);
   loadQueue().then(() => updateQueueBadge());
@@ -1120,24 +1135,63 @@ function showApp() {
 }
 
 // ─── Mode ─────────────────────────────────────────────
-function setMode(mode, btn) {
+const MODE_LABELS = {
+  general: '🤖 Umum', trading: '📈 Trading', social: '📱 Sosial',
+  email: '✉️ Emel', news: '🗞️ Berita', agama: '🕌 Agama', perak: '🏔️ Perak'
+};
+
+const MODE_GREET = {
+  general: '🤖 Mod Umum — Saya sedia membantu anda!',
+  trading: '📈 Mod Trading — Mari analisis pasaran bersama!',
+  social: '📱 Mod Sosial — Jom buat kandungan viral!',
+  email: '✉️ Mod Emel — Tulis emel profesional dengan mudah!',
+  news: '🗞️ Mod Berita — Saya akan cari berita terkini untuk anda!',
+  agama: '🕌 Mod Agama — Bertanya dengan penuh adab.',
+  perak: '🏔️ Mod Perak Kamuniti — Saya akan carikan berita, kerja kosong & kisah viral dari Perak!'
+};
+
+function switchMode(mode, btn) {
   currentMode = mode;
-  history = [];
+
+  // Update active pill
   document.querySelectorAll('.mode-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  // Update mode badge in header
+  const badge = document.getElementById('modeBadge');
+  if (badge) badge.textContent = MODE_LABELS[mode] || mode;
+
   updateChips();
   updatePerakFab(mode);
 
-  const greet = {
-    general: '🤖 Mod Umum — Saya sedia membantu anda!',
-    trading: '📈 Mod Trading — Mari analisis pasaran bersama!',
-    social: '📱 Mod Sosial — Jom buat kandungan viral!',
-    email: '✉️ Mod Emel — Tulis emel profesional dengan mudah!',
-    news: '🗞️ Mod Berita — Saya akan cari berita terkini untuk anda!',
-    agama: '🕌 Mod Agama — Bertanya dengan penuh adab. Sentiasa rujuk ulama untuk isu besar.',
-    perak: '🏔️ Mod Perak Kamuniti — Saya akan carikan berita, kerja kosong & kisah viral dari Perak untuk post FB anda hari ini!'
-  };
-  addMsg('ai', greet[mode]);
+  // Restore this mode's chat messages
+  renderChat(chatMessages[mode] || []);
+
+  // Show greeting only if this mode has no messages yet
+  if (!chatMessages[mode] || chatMessages[mode].length === 0) {
+    addMsg('ai', MODE_GREET[mode]);
+  }
+}
+
+// Keep backward compat for inline onclick="setMode(...)"
+function setMode(mode, btn) { switchMode(mode, btn); }
+
+function renderChat(messages) {
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  if (!messages || messages.length === 0) {
+    msgs.innerHTML = '<div class="empty-state">Tiada perbualan lagi.<br>Taip sesuatu untuk bermula...</div>';
+    return;
+  }
+  messages.forEach(m => {
+    const d = document.createElement('div');
+    d.className = `msg${m.role === 'user' ? ' user' : ''}`;
+    d.innerHTML = `
+      <div class="av ${m.role === 'user' ? 'me' : 'ai'}">${m.role === 'user' ? 'U' : 'AI'}</div>
+      <div class="bubble ${m.role === 'user' ? 'user' : 'ai'}">${m.content.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--accent)">$1</a>')}</div>`;
+    msgs.appendChild(d);
+  });
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 function updateChips() {
@@ -1154,12 +1208,21 @@ function useChip(el) {
 
 // ─── Chat ─────────────────────────────────────────────
 function addMsg(role, text) {
+  // Store in per-mode array
+  if (!chatMessages[currentMode]) chatMessages[currentMode] = [];
+  chatMessages[currentMode].push({ role, content: text });
+  persistChatHistory();
+
   const msgs = document.getElementById('messages');
+  // Remove empty state if present
+  const empty = msgs.querySelector('.empty-state');
+  if (empty) empty.remove();
+
   const d = document.createElement('div');
   d.className = `msg${role === 'user' ? ' user' : ''}`;
   d.innerHTML = `
     <div class="av ${role === 'user' ? 'me' : 'ai'}">${role === 'user' ? 'U' : 'AI'}</div>
-    <div class="bubble ${role === 'user' ? 'user' : 'ai'}">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+    <div class="bubble ${role === 'user' ? 'user' : 'ai'}">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" style="color:var(--accent)">$1</a>')}</div>`;
   msgs.appendChild(d);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -1185,6 +1248,7 @@ async function send() {
 
   addMsg('user', text);
   inp.value = ''; inp.style.height = 'auto';
+
   // Build message content with optional image
   let userContent;
   if (currentImage) {
@@ -1199,29 +1263,42 @@ async function send() {
   } else {
     userContent = text;
   }
-  history.push({ role: 'user', content: userContent });
+
+  // Store in per-mode history only (removed duplicate history.push)
+  chatHistory[currentMode].push({ role: 'user', content: userContent });
+  persistChatHistory();
 
   const btn = document.getElementById('sendBtn');
   btn.disabled = true;
   showTyping();
 
+  // Check cache first (text-only messages only)
+  const cached = typeof userContent === 'string' ? getCached(text) : null;
+  if (cached) {
+    hideTyping();
+    chatHistory[currentMode].push({ role: 'assistant', content: cached });
+    addMsg('ai', cached);
+    persistChatHistory();
+    checkAndShowPerakPanel(cached, text);
+    btn.disabled = false;
+    return;
+  }
+
   try {
-    const needSearch = true;
+    const needSearch = ['berita','harga','terkini','hari ini','sekarang','latest','news','kerja','viral','perak'].some(w => text.toLowerCase().includes(w)) || currentMode === 'news' || currentMode === 'perak';
 
     const body = {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       system: SYSTEM_PROMPTS[currentMode],
-      messages: history
+      messages: chatHistory[currentMode]
     };
 
     if (needSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
     const res = await fetch('/.netlify/functions/claude', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
@@ -1230,18 +1307,29 @@ async function send() {
     if (data.error) {
       hideTyping();
       addMsg('ai', `❌ Ralat: ${data.error.message}`);
-      history.pop();
+      chatHistory[currentMode].pop();
     } else {
       const reply = data.content.map(i => i.type === 'text' ? i.text : '').filter(Boolean).join('\n');
-      history.push({ role: 'assistant', content: reply });
+      chatHistory[currentMode].push({ role: 'assistant', content: reply });
+      persistChatHistory();
+      // Cache text-only replies
+      if (typeof userContent === 'string') setCached(text, reply);
       hideTyping();
       addMsg('ai', reply);
       checkAndShowPerakPanel(reply, text);
     }
   } catch(e) {
     hideTyping();
-    addMsg('ai', '❌ Tiada sambungan internet. Cuba semula.');
-    history.pop();
+    // Offline fallback — try cache first
+    const fallback = typeof userContent === 'string' ? getCached(text) : null;
+    if (fallback) {
+      chatHistory[currentMode].push({ role: 'assistant', content: fallback });
+      addMsg('ai', `📦 (Cache) ${fallback}`);
+    } else {
+      addMsg('ai', '⚠️ Offline mode: data tidak tersedia. Semak sambungan internet anda.');
+    }
+    chatHistory[currentMode].pop();
+    persistChatHistory();
   }
 
   btn.disabled = false;
@@ -1284,7 +1372,9 @@ function saveSettings() {
 }
 
 function clearChat() {
-  history = [];
+  chatHistory[currentMode] = [];
+  chatMessages[currentMode] = [];
+  persistChatHistory();
   document.getElementById('messages').innerHTML = '';
   addMsg('ai', '🗑️ Chat telah dikosongkan. Saya sedia membantu anda semula!');
   closeSettings();
@@ -1435,15 +1525,12 @@ Tulis dalam Bahasa Melayu santai dan emoji menarik.`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-  model: 'claude-haiku-4-5-20251001',
-  max_tokens: 1500,
-  system: currentMode === 'perak'
-    ? SYSTEM_PROMPTS.perak + `
-Pastikan gaya seperti post Facebook komuniti yang engaging dan natural.
-`
-    : SYSTEM_PROMPTS[currentMode],
-  messages: [{ role:'user', content: prompt }]
-});
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        system: `Anda adalah NEXUS Perak Kamuniti Agent. Jana post Facebook yang menarik dan informatif untuk group Perak Kamuniti.`,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
     const data = await res.json();
     const reply = data.content.map(i => i.type === 'text' ? i.text : '').filter(Boolean).join('\n');
     if (reply) {
