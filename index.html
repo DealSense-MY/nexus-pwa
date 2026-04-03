@@ -1301,7 +1301,7 @@ async function send() {
 
     if (needSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
-    const res = await fetch('/.netlify/functions/claude', {
+    const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -1526,7 +1526,7 @@ Contoh format:
 Tulis dalam Bahasa Melayu santai dan emoji menarik.`;
 
   try {
-    const res = await fetch('/.netlify/functions/claude', {
+    const res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
