@@ -1,8 +1,10 @@
-const CACHE_NAME = 'nexus-v3';
+const CACHE_NAME = 'nexus-v5';
 const ASSETS = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', e => {
