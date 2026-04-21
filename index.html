@@ -245,7 +245,7 @@
   .mode-bar::-webkit-scrollbar { display: none; }
 
   .mode-pill {
-    padding: 6px 14px;
+    padding: 7px 15px;
     border-radius: 20px;
     border: 1px solid var(--border);
     background: var(--surface2);
@@ -254,49 +254,69 @@
     font-size: 0.68rem;
     white-space: nowrap;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.22s ease;
     flex-shrink: 0;
+    letter-spacing: 0.02em;
   }
 
-  .mode-pill.active {
+  /* ── Umum (Cyan) ── */
+  .mode-pill[onclick*="general"]:hover,
+  .mode-pill[onclick*="general"].active {
     background: rgba(0,229,255,0.1);
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: 0 0 10px rgba(0,229,255,0.35), 0 0 20px rgba(0,229,255,0.15);
-  }
-
-  .mode-pill:hover {
-    background: rgba(0,229,255,0.08);
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: 0 0 10px rgba(0,229,255,0.3), 0 0 20px rgba(0,229,255,0.12);
+    border-color: #00e5ff;
+    color: #00e5ff;
+    box-shadow: 0 0 10px rgba(0,229,255,0.35), 0 0 22px rgba(0,229,255,0.15);
     transform: translateY(-1px);
   }
 
-  /* Per-tab branded glow on hover */
-  .mode-pill[onclick*="social"]:hover {
+  /* ── TikTok (Red) ── */
+  .mode-pill[onclick*="social"]:hover,
+  .mode-pill[onclick*="social"].active {
+    background: rgba(254,44,85,0.1);
     border-color: #fe2c55;
     color: #fe2c55;
-    box-shadow: 0 0 10px rgba(254,44,85,0.4), 0 0 20px rgba(254,44,85,0.15);
+    box-shadow: 0 0 10px rgba(254,44,85,0.4), 0 0 22px rgba(254,44,85,0.15);
+    transform: translateY(-1px);
   }
-  .mode-pill[onclick*="instagram"]:hover {
+
+  /* ── Instagram (Purple-Pink) ── */
+  .mode-pill[onclick*="instagram"]:hover,
+  .mode-pill[onclick*="instagram"].active {
+    background: rgba(193,53,132,0.1);
     border-color: #c13584;
-    box-shadow: 0 0 10px rgba(193,53,132,0.4), 0 0 20px rgba(253,29,29,0.15);
+    color: #e1306c;
+    box-shadow: 0 0 10px rgba(193,53,132,0.4), 0 0 22px rgba(193,53,132,0.15);
+    transform: translateY(-1px);
   }
-  .mode-pill[onclick*="email"]:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: 0 0 10px rgba(0,229,255,0.3), 0 0 20px rgba(0,229,255,0.12);
+
+  /* ── Agama (Green) ── */
+  .mode-pill[onclick*="agama"]:hover,
+  .mode-pill[onclick*="agama"].active {
+    background: rgba(16,185,129,0.1);
+    border-color: #10b981;
+    color: #10b981;
+    box-shadow: 0 0 10px rgba(16,185,129,0.4), 0 0 22px rgba(16,185,129,0.15);
+    transform: translateY(-1px);
   }
-  .mode-pill[onclick*="agama"]:hover {
-    border-color: #4caf50;
-    color: #4caf50;
-    box-shadow: 0 0 10px rgba(76,175,80,0.4), 0 0 20px rgba(76,175,80,0.15);
+
+  /* ── Emel (Amber) ── */
+  .mode-pill[onclick*="email"]:hover,
+  .mode-pill[onclick*="email"].active {
+    background: rgba(251,191,36,0.1);
+    border-color: #fbbf24;
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(251,191,36,0.35), 0 0 22px rgba(251,191,36,0.15);
+    transform: translateY(-1px);
   }
-  .mode-pill[onclick*="perak"]:hover {
+
+  /* ── Facebook (Blue) ── */
+  .mode-pill[onclick*="perak"]:hover,
+  .mode-pill[onclick*="perak"].active {
+    background: rgba(24,119,242,0.1);
     border-color: #1877f2;
     color: #1877f2;
-    box-shadow: 0 0 10px rgba(24,119,242,0.4), 0 0 20px rgba(24,119,242,0.15);
+    box-shadow: 0 0 10px rgba(24,119,242,0.4), 0 0 22px rgba(24,119,242,0.15);
+    transform: translateY(-1px);
   }
 
   /* Messages */
@@ -842,11 +862,11 @@
   <!-- Mode pills -->
   <div class="mode-bar">
     <button class="mode-pill active" onclick="setMode('general',this)">🤖 Umum</button>
-    <button class="mode-pill" onclick="setMode('social',this)" style="border-color:rgba(254,44,85,0.4);color:#fe2c55;">🎵 TikTok</button>
-    <button class="mode-pill" onclick="setMode('instagram',this)" style="border-color:rgba(131,58,180,0.4);background:linear-gradient(45deg,#833ab4,#fd1d1d,#fcb045) text;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fd1d1d;">📸 Instagram</button>
+    <button class="mode-pill" onclick="setMode('social',this)">🎵 TikTok</button>
+    <button class="mode-pill" onclick="setMode('instagram',this)">📸 Instagram</button>
     <button class="mode-pill" onclick="setMode('agama',this)">🕌 Agama</button>
     <button class="mode-pill" onclick="setMode('email',this)">✉️ Emel</button>
-    <button class="mode-pill" onclick="setMode('perak',this)" style="border-color:rgba(24,119,242,0.4);color:#1877f2;">📘 Facebook</button>
+    <button class="mode-pill" onclick="setMode('perak',this)">📘 Facebook</button>
   </div>
 
   <!-- Messages -->
