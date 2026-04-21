@@ -1003,13 +1003,13 @@ let currentMode = 'general';
 
 // Per-mode chat history — fixes mode separation bug
 let chatHistory = {
-  general: [], trading: [], social: [],
+  general: [], trading: [], social: [], instagram: [],
   email: [], news: [], agama: [], perak: []
 };
 
 // Per-mode rendered messages (for UI restore)
 let chatMessages = {
-  general: [], trading: [], social: [],
+  general: [], trading: [], social: [], instagram: [],
   email: [], news: [], agama: [], perak: []
 };
 
@@ -1087,7 +1087,8 @@ function loadChatHistory() {
 const SYSTEM_PROMPTS = {
   general: `Anda adalah NEXUS, pembantu AI peribadi yang bijak dan membantu. Berbahasa Melayu. Jawapan padat dan berguna.`,
   trading: `Anda adalah NEXUS Trading Analyst — pakar analisis pasaran kewangan, forex, crypto, saham. Berikan analisis tepat dan objektif dengan peringatan risiko. Berbahasa Melayu.`,
-  social: `Anda adalah NEXUS Social Media Expert. Mahir membuat caption viral, hashtag, skrip TikTok/IG/FB untuk audiens Malaysia. Kandungan menarik dan engaging. Berbahasa Melayu.`,
+  social: `Anda adalah NEXUS TikTok Expert. Mahir membuat skrip TikTok viral, hook yang kuat, scene breakdown, dan caption pendek untuk audiens Malaysia. Kandungan menarik, relatable dan engaging. Berbahasa Melayu.`,
+  instagram: `Anda adalah NEXUS Instagram Expert. Mahir membuat caption IG yang menarik, idea Reel, hashtag strategy, dan storytelling visual untuk audiens Malaysia. Gaya santai, aesthetic dan engaging. Berbahasa Melayu.`,
   email: `Anda adalah NEXUS Email Assistant — pakar emel profesional Bahasa Melayu dan Inggeris. Sentiasa sediakan subjek dan badan emel yang jelas.`,
   news: `Anda adalah NEXUS News Analyst. Cari dan analisis berita terkini ekonomi, kewangan, teknologi, Malaysia. Berikan konteks dan implikasi. Berbahasa Melayu.`,
   agama: `Anda pakar agama Islam berdasarkan Al-Quran dan Hadith. Berikan pandangan yang adil dan ilmiah. Sentiasa mengingatkan untuk rujuk ustaz/ulama untuk isu besar.`,
@@ -1118,7 +1119,8 @@ Tulis dalam Bahasa Melayu santai, emoji menarik, format jelas dan mudah dibaca. 
 const CHIPS = {
   general: ['Apa berita terkini?','Nasihat untuk hari ini','Motivasi pagi','Apa itu AI?'],
   trading: ['Analisis BTC sekarang','Trend forex MYR','Signal emas hari ini','Strategi scalping'],
-  social: ['Caption IG viral','Skrip TikTok 30s','Post FB promosi','Hashtag trending Malaysia'],
+  social: ['Hook TikTok viral','Skrip TikTok 30s','Scene breakdown video','Hashtag TikTok Malaysia'],
+  instagram: ['Caption IG menarik','Idea Reel viral','Hashtag strategy IG','Caption produk affiliate'],
   email: ['Emel perkenalan diri','Follow-up pelanggan','Tawaran kerja','Emel terima kasih'],
   news: ['Berita ekonomi Malaysia','Berita crypto hari ini','Berita dunia penting','Analisis KLCI'],
   agama: ['Hukum forex trading','Doa pagi hari','Hukum pelaburan saham','Adab perniagaan Islam'],
@@ -1178,14 +1180,16 @@ function showApp() {
 
 // ─── Mode ─────────────────────────────────────────────
 const MODE_LABELS = {
-  general: '🤖 Umum', trading: '📈 Trading', social: '📱 Sosial',
-  email: '✉️ Emel', news: '🗞️ Berita', agama: '🕌 Agama', perak: '📘 Facebook'
+  general: '🤖 Umum', trading: '📈 Trading', social: '🎵 TikTok',
+  instagram: '📸 Instagram', email: '✉️ Emel', news: '🗞️ Berita',
+  agama: '🕌 Agama', perak: '📘 Facebook'
 };
 
 const MODE_GREET = {
   general: '🤖 Mod Umum — Saya sedia membantu anda!',
   trading: '📈 Mod Trading — Mari analisis pasaran bersama!',
-  social: '📱 Mod Sosial — Jom buat kandungan viral!',
+  social: '🎵 Mod TikTok — Jom buat content viral untuk TikTok!',
+  instagram: '📸 Mod Instagram — Caption, Reel idea & hashtag power!',
   email: '✉️ Mod Emel — Tulis emel profesional dengan mudah!',
   news: '🗞️ Mod Berita — Saya akan cari berita terkini untuk anda!',
   agama: '🕌 Mod Agama — Bertanya dengan penuh adab.',
