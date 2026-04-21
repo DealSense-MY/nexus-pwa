@@ -131,11 +131,24 @@ def call_claude_with_retry(prompt):
 def extract_text(response):
     if not response:
         return ""
-    return "\n".join(
+    # Ambil SEMUA text blocks
+    text_blocks = [
         block["text"]
         for block in response.get("content", [])
-        if block.get("type") == "text"
-    ).strip()
+        if block.get("type") == "text" and block.get("text", "").strip()
+    ]
+    if not text_blocks:
+        return ""
+    # Gabungkan semua blocks
+    full_text = "\n".join(text_blocks).strip()
+    # Strip thinking text — cari mana post sebenar bermula
+    markers = ["PERAK KAMUNITI", "## 📱 PERAK", "📢 PERAK", "BAHAGIAN 1"]
+    for marker in markers:
+        idx = full_text.find(marker)
+        if idx > 0:
+            log(f"Strip {idx} chars thinking text sebelum post sebenar.")
+            return full_text[idx:].strip()
+    return full_text
 
 # ─── VALIDATE ─────────────────────────────────────────
 def validate_output(content):
