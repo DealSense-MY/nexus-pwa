@@ -262,6 +262,41 @@
     background: rgba(0,229,255,0.1);
     border-color: var(--accent);
     color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,229,255,0.35), 0 0 20px rgba(0,229,255,0.15);
+  }
+
+  .mode-pill:hover {
+    background: rgba(0,229,255,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,229,255,0.3), 0 0 20px rgba(0,229,255,0.12);
+    transform: translateY(-1px);
+  }
+
+  /* Per-tab branded glow on hover */
+  .mode-pill[onclick*="social"]:hover {
+    border-color: #fe2c55;
+    color: #fe2c55;
+    box-shadow: 0 0 10px rgba(254,44,85,0.4), 0 0 20px rgba(254,44,85,0.15);
+  }
+  .mode-pill[onclick*="instagram"]:hover {
+    border-color: #c13584;
+    box-shadow: 0 0 10px rgba(193,53,132,0.4), 0 0 20px rgba(253,29,29,0.15);
+  }
+  .mode-pill[onclick*="email"]:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,229,255,0.3), 0 0 20px rgba(0,229,255,0.12);
+  }
+  .mode-pill[onclick*="agama"]:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+    box-shadow: 0 0 10px rgba(76,175,80,0.4), 0 0 20px rgba(76,175,80,0.15);
+  }
+  .mode-pill[onclick*="perak"]:hover {
+    border-color: #1877f2;
+    color: #1877f2;
+    box-shadow: 0 0 10px rgba(24,119,242,0.4), 0 0 20px rgba(24,119,242,0.15);
   }
 
   /* Messages */
@@ -804,32 +839,14 @@
     </div>
   </div>
 
-  <!-- Market ticker -->
-  <div class="ticker">
-    <div class="ticker-inner" id="tickerInner">
-      <span class="tick-item"><span class="tick-name">BTC</span><span class="tick-val up" id="t-btc">...</span></span>
-      <span class="tick-item"><span class="tick-name">ETH</span><span class="tick-val up" id="t-eth">...</span></span>
-      <span class="tick-item"><span class="tick-name">GOLD</span><span class="tick-val up">$3,050</span></span>
-      <span class="tick-item"><span class="tick-name">USD/MYR</span><span class="tick-val">4.42</span></span>
-      <span class="tick-item"><span class="tick-name">KLCI</span><span class="tick-val up">1,580</span></span>
-      <!-- Duplicate for seamless loop -->
-      <span class="tick-item"><span class="tick-name">BTC</span><span class="tick-val up" id="t-btc2">...</span></span>
-      <span class="tick-item"><span class="tick-name">ETH</span><span class="tick-val up" id="t-eth2">...</span></span>
-      <span class="tick-item"><span class="tick-name">GOLD</span><span class="tick-val up">$3,050</span></span>
-      <span class="tick-item"><span class="tick-name">USD/MYR</span><span class="tick-val">4.42</span></span>
-      <span class="tick-item"><span class="tick-name">KLCI</span><span class="tick-val up">1,580</span></span>
-    </div>
-  </div>
-
   <!-- Mode pills -->
   <div class="mode-bar">
     <button class="mode-pill active" onclick="setMode('general',this)">🤖 Umum</button>
-    <button class="mode-pill" onclick="setMode('trading',this)">📈 Trading</button>
-    <button class="mode-pill" onclick="setMode('social',this)">📱 Sosial</button>
-    <button class="mode-pill" onclick="setMode('email',this)">✉️ Emel</button>
-    <button class="mode-pill" onclick="setMode('news',this)">🗞️ Berita</button>
+    <button class="mode-pill" onclick="setMode('social',this)" style="border-color:rgba(254,44,85,0.4);color:#fe2c55;">🎵 TikTok</button>
+    <button class="mode-pill" onclick="setMode('instagram',this)" style="border-color:rgba(131,58,180,0.4);background:linear-gradient(45deg,#833ab4,#fd1d1d,#fcb045) text;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fd1d1d;">📸 Instagram</button>
     <button class="mode-pill" onclick="setMode('agama',this)">🕌 Agama</button>
-    <button class="mode-pill" onclick="setMode('perak',this)" style="border-color:rgba(255,193,7,0.4);color:#ffc107;">🏔️ Perak</button>
+    <button class="mode-pill" onclick="setMode('email',this)">✉️ Emel</button>
+    <button class="mode-pill" onclick="setMode('perak',this)" style="border-color:rgba(24,119,242,0.4);color:#1877f2;">📘 Facebook</button>
   </div>
 
   <!-- Messages -->
@@ -1142,7 +1159,7 @@ function showApp() {
 // ─── Mode ─────────────────────────────────────────────
 const MODE_LABELS = {
   general: '🤖 Umum', trading: '📈 Trading', social: '📱 Sosial',
-  email: '✉️ Emel', news: '🗞️ Berita', agama: '🕌 Agama', perak: '🏔️ Perak'
+  email: '✉️ Emel', news: '🗞️ Berita', agama: '🕌 Agama', perak: '📘 Facebook'
 };
 
 const MODE_GREET = {
