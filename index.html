@@ -1616,14 +1616,16 @@ function renderQueue() {
   };
   list.innerHTML = postQueue.map((item, i) => {
     const b = badges[item.type] || badges.post;
+    const unverified = item.validation && item.validation.status === 'UNVERIFIED';
     return `<div class="queue-item${item.done ? ' done' : ''}" id="qi-${item.id}">
       <div class="queue-item-top">
         <span class="queue-type-badge ${b.cls}">${b.txt}</span>
         <span class="queue-time">${item.date}</span>
       </div>
+      ${unverified ? '<div class="queue-time" style="color:#ff9800;">⚠️ UNVERIFIED — semak bukti jawatan sebelum salin</div>' : ''}
       <div class="queue-preview">${item.content.replace(/\n/g,' ')}</div>
       <div class="queue-item-actions">
-        <button class="qi-btn qi-copy" onclick="copyQueueItem(${item.id})">📋 Copy</button>
+        <button class="qi-btn qi-copy" onclick="copyQueueItem(${item.id})" ${unverified ? 'disabled title="Bukti jawatan belum lengkap"' : ''}>📋 Copy</button>
         <button class="qi-btn qi-copy" onclick="previewQueueItem(${item.id})" style="background:rgba(255,193,7,0.1);border-color:rgba(255,193,7,0.3);color:#ffc107;">👁️ Preview</button>
         <button class="qi-btn qi-del" onclick="deleteQueueItem(${item.id})">🗑️</button>
       </div>
@@ -1634,6 +1636,10 @@ function renderQueue() {
 function copyQueueItem(id) {
   const item = postQueue.find(i => i.id === id);
   if (!item) return;
+  if (item.validation && item.validation.status === 'UNVERIFIED') {
+    showToast('⚠️ UNVERIFIED: semak employer, jawatan, lokasi, URL terus dan tarikh dahulu.');
+    return;
+  }
   navigator.clipboard.writeText(item.content).then(() => {
     item.done = true;
     saveQueue();

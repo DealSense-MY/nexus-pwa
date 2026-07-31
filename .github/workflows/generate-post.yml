@@ -10,17 +10,30 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Default-off: only a human-approved manual validation may set this true.
+    env:
+      PERAK_DAILY_POST_ENABLED: ${{ secrets.PERAK_DAILY_POST_ENABLED }}
 
     steps:
+      - name: Safety gate
+        run: |
+          if [ "${PERAK_DAILY_POST_ENABLED}" != "true" ]; then
+            echo "Daily-post gate is disabled; no API call, queue write, or commit."
+            exit 0
+          fi
+
       - name: Checkout repo
+        if: ${{ env.PERAK_DAILY_POST_ENABLED == 'true' }}
         uses: actions/checkout@v4
 
       - name: Generate post dengan Claude AI
+        if: ${{ env.PERAK_DAILY_POST_ENABLED == 'true' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python3 generate_post.py
 
       - name: Commit queue.json
+        if: ${{ env.PERAK_DAILY_POST_ENABLED == 'true' }}
         run: |
           git config user.name "NEXUS Bot"
           git config user.email "nexus@dealsense.my"
