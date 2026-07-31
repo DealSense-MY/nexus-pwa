@@ -5,6 +5,7 @@ import os
 import re
 import time
 from datetime import datetime
+from urllib.parse import urlparse
 
 # ─── CONFIG ───────────────────────────────────────────
 API_KEY       = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -20,6 +21,12 @@ MIN_URLS      = 3
 MIN_LENGTH    = 200
 TRUSTED_JOBS  = ["jobstreet.com", "maukerja.my", "indeed.com"]
 REQUIRED_SECTIONS = ["BAHAGIAN 1", "BAHAGIAN 2", "BAHAGIAN 3"]
+VACANCY_FIELDS = ["employer", "job_title", "location", "direct_vacancy_url", "checked_date"]
+GENERIC_JOB_URL_MARKERS = ["jobsearch", "search", "keyword", "location", "jobs/in-", "-jobs", "q-", "l-"]
+
+
+class ConfigurationError(Exception):
+    """A credential or permission error that must not be retried."""
 
 # ─── LOGGING ──────────────────────────────────────────
 def log(message, level="INFO"):
@@ -70,6 +77,13 @@ def build_prompt():
         "Lokasi: [daerah dalam Perak]\n"
         "Gaji: [julat gaji jika ada]\n"
         "Apply: [URL dari JobStreet ATAU Maukerja ATAU Indeed - WAJIB]\n\n"
+        "BUKTI JAWATAN (WAJIB untuk SETIAP jawatan, ikut label tepat):\n"
+        "Employer: [nama syarikat sebenar]\n"
+        "Job title: [nama jawatan sebenar]\n"
+        "Location: [daerah, Perak]\n"
+        "Direct vacancy URL: [URL terus ke iklan jawatan, bukan halaman carian]\n"
+        "Checked date: [YYYY-MM-DD]\n"
+        "Jika mana-mana bukti ini tidak lengkap atau URL bukan iklan terus, tulis UNVERIFIED dan jangan reka maklumat.\n\n"
         "HASHTAG AKHIR:\n"
         "#PerakKamuniti #Perak #Malaysia #InfoPerak #KerjaPerak #BeritaPerak + hashtag berkaitan hari ini\n\n"
         "Tulis Bahasa Melayu santai dengan emoji menarik."
@@ -115,6 +129,11 @@ def call_claude_with_retry(prompt):
         except urllib.error.HTTPError as e:
             body = e.read().decode()
             log(f"HTTP Error {e.code} pada cuba #{attempt}: {body}", "ERROR")
+            if e.code in (401, 403):
+                raise ConfigurationError(
+                    "Anthropic credential was rejected or lacks permission; "
+                    "do not retry until the GitHub secret is corrected."
+                ) from e
         except urllib.error.URLError as e:
             log(f"URL Error pada cuba #{attempt}: {e.reason}", "ERROR")
         except Exception as e:
@@ -151,6 +170,66 @@ def extract_text(response):
     return full_text
 
 # ─── VALIDATE ─────────────────────────────────────────
+def is_direct_vacancy_url(url):
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    host = parsed.netloc.lower().removeprefix("www.")
+    if not parsed.scheme == "https" or not any(host.endswith(platform) for platform in TRUSTED_JOBS):
+        return False
+    candidate = f"{parsed.path}?{parsed.query}".lower()
+    return bool(parsed.path.strip("/")) and not any(marker in candidate for marker in GENERIC_JOB_URL_MARKERS)
+
+
+def validate_vacancy_evidence(content):
+    section = content.split("BAHAGIAN 3", 1)[-1]
+    blocks = re.split(r"(?im)^\s*(?=(?:\d+[.)]\s*)?Employer\s*:)", section)
+    vacancies = []
+
+    for block in blocks:
+        fields = {}
+        for label, key in [
+            ("Employer", "employer"),
+            ("Job title", "job_title"),
+            ("Location", "location"),
+            ("Direct vacancy URL", "direct_vacancy_url"),
+            ("Checked date", "checked_date"),
+        ]:
+            match = re.search(rf"(?im)^\s*{re.escape(label)}\s*:\s*(.+?)\s*$", block)
+            if match:
+                fields[key] = match.group(1).strip()
+
+        if not fields:
+            continue
+
+        missing = [key for key in VACANCY_FIELDS if not fields.get(key) or fields[key].upper() == "UNVERIFIED"]
+        url = fields.get("direct_vacancy_url", "")
+        direct_url = is_direct_vacancy_url(url)
+        checked_date = fields.get("checked_date", "")
+        valid_date = bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", checked_date))
+        reasons = []
+        if missing:
+            reasons.append("missing: " + ", ".join(missing))
+        if url and not direct_url:
+            reasons.append("direct_vacancy_url is not a trusted direct listing")
+        if checked_date and not valid_date:
+            reasons.append("checked_date must be YYYY-MM-DD")
+
+        vacancies.append({
+            **{key: fields.get(key, "UNVERIFIED") for key in VACANCY_FIELDS},
+            "status": "PASS" if not reasons else "UNVERIFIED",
+            "reasons": reasons,
+        })
+
+    status = "PASS" if vacancies and all(vacancy["status"] == "PASS" for vacancy in vacancies) else "UNVERIFIED"
+    return {
+        "status": status,
+        "checked_at": datetime.now().strftime("%Y-%m-%d"),
+        "vacancies": vacancies,
+    }
+
+
 def validate_output(content):
     passed = True
 
@@ -168,18 +247,15 @@ def validate_output(content):
         log(f"AMARAN: Hanya {len(urls)} URL dijumpai (minimum {MIN_URLS})", "WARN")
         passed = False
 
-    trusted_found = any(
-        any(platform in url for platform in TRUSTED_JOBS)
-        for url in urls
-    )
-    if not trusted_found:
-        log("AMARAN: Tiada link kerja dari JobStreet/Maukerja/Indeed!", "WARN")
+    validation = validate_vacancy_evidence(content)
+    if validation["status"] != "PASS":
+        log("AMARAN: Bukti jawatan tidak lengkap atau tidak dapat disahkan — UNVERIFIED.", "WARN")
         passed = False
 
     if passed:
         log(f"Validasi lulus. {len(urls)} URL dijumpai, semua bahagian ada.")
 
-    return passed
+    return passed, validation
 
 # ─── DUPLICATE CHECK ──────────────────────────────────
 def is_duplicate(content):
@@ -196,7 +272,7 @@ def is_duplicate(content):
     return False
 
 # ─── SAVE QUEUE ───────────────────────────────────────
-def save_to_queue(content):
+def save_to_queue(content, validation):
     try:
         with open(QUEUE_FILE, "r", encoding="utf-8") as f:
             queue = json.load(f)
@@ -208,7 +284,9 @@ def save_to_queue(content):
         "content": content,
         "type": "daily",
         "date": datetime.now().strftime("%d/%m/%Y %H:%M"),
-        "done": False
+        "done": False,
+        "validation": validation,
+        "review_required": validation["status"] != "PASS",
     })
     queue = queue[:MAX_QUEUE]
 
@@ -227,7 +305,11 @@ def main():
         log("ANTHROPIC_API_KEY tidak dijumpai dalam environment!", "ERROR")
         exit(1)
 
-    response = call_claude_with_retry(build_prompt())
+    try:
+        response = call_claude_with_retry(build_prompt())
+    except ConfigurationError as e:
+        log(str(e), "ERROR")
+        exit(1)
     if not response:
         log("Gagal mendapat response dari API.", "ERROR")
         exit(1)
@@ -242,14 +324,14 @@ def main():
     log(content[:400] + "..." if len(content) > 400 else content)
     log("-" * 50)
 
-    is_valid = validate_output(content)
+    is_valid, validation = validate_output(content)
     if not is_valid:
         log("Post tidak lulus validasi penuh — disimpan untuk semak manual.", "WARN")
 
     if is_duplicate(content):
         exit(0)
 
-    save_to_queue(content)
+    save_to_queue(content, validation)
     log("Selesai! Post berjaya dijana dan disimpan.")
     log("=" * 50)
 
